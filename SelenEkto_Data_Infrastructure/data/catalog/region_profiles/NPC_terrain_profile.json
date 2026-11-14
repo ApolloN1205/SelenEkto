@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.1",
+  "report_type": "selenekto_site_terrain_profile",
+  "generated_utc": "2026-11-14T22:52:36+00:00",
+  "site_code": "NPC",
+  "region_name": "Idel'son L crater 1",
+  "source": "NASA/GSFC PGDA, LOLA 5m/pixel south-polar terrain products",
+  "grid": null,
+  "layers": {
+    "elevation": {
+      "source_file": "NPC_final_adj_5mpp_surf.tif",
+      "unit_from_product_documentation": "m",
+      "status": "missing_file",
+      "statistics": null
+    },
+    "measurement_count": {
+      "source_file": "NPC_final_adj_5mpp_ldec.tif",
+      "unit_from_product_documentation": "LOLA spots per pixel",
+      "status": "missing_file",
+      "statistics": null
+    },
+    "elevation_uncertainty": {
+      "source_file": "NPC_final_adj_5mpp_toterr.tif",
+      "unit_from_product_documentation": "RMS error (m)",
+      "status": "missing_file",
+      "statistics": null
+    },
+    "slope": {
+      "source_file": "NPC_final_adj_5mpp_slp.tif",
+      "unit_from_product_documentation": "degrees",
+      "status": "missing_file",
+      "statistics": null
+    },
+    "slope_uncertainty": {
+      "source_file": "NPC_final_adj_5mpp_slperr.tif",
+      "unit_from_product_documentation": "RMS error (degrees)",
+      "status": "missing_file",
+      "statistics": null
+    }
+  },
+  "dataset_provenance": [],
+  "availability": "incomplete",
+  "errors": [
+    "elevation: missing file NPC_final_adj_5mpp_surf.tif",
+    "measurement_count: missing file NPC_final_adj_5mpp_ldec.tif",
+    "elevation_uncertainty: missing file NPC_final_adj_5mpp_toterr.tif",
+    "slope: missing file NPC_final_adj_5mpp_slp.tif",
+    "slope_uncertainty: missing file NPC_final_adj_5mpp_slperr.tif"
+  ],
+  "scientific_interpretation_limits": [
+    "JSON stores per-layer statistical summaries, not all pixel values.",
+    "Full-resolution source GeoTIFF files remain authoritative.",
+    "NoData is not zero, and LDEC zero is not necessarily missing elevation.",
+    "This report does not establish landing safety, sunlight, or Earth visibility.",
+    "Quantiles use a spatial overview sample; min/max/mean/std and valid counts are full-raster."
+  ]
+}

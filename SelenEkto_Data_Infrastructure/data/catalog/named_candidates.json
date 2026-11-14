@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "purpose": "named candidate coordinates and pixel metrics; not landing safety",
+  "candidates": [
+    {
+      "region": "Site01",
+      "row": 1958,
+      "col": 1795,
+      "elevation_m": 1695.007568359375,
+      "x_projected_m": -10022.5,
+      "y_projected_m": -13792.5,
+      "slope_deg": 9.78775691986084,
+      "elevation_rms_m": 0.5388803482055664,
+      "slope_rms_deg": 2.226250648498535,
+      "lola_spot_count": 0.0,
+      "name": "one"
+    },
+    {
+      "region": "Site01",
+      "row": 875,
+      "col": 2473,
+      "elevation_m": 1077.097412109375,
+      "x_projected_m": -6632.5,
+      "y_projected_m": -8377.5,
+      "slope_deg": 8.706374168395996,
+      "elevation_rms_m": 0.40015360713005066,
+      "slope_rms_deg": 1.8472189903259277,
+      "lola_spot_count": 1.0,
+      "name": "hey"
+    }
+  ]
+}
