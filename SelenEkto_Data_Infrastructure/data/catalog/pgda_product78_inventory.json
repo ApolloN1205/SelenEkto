@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "source_url": "https://pgda.gsfc.nasa.gov/products/78",
+  "source_description": "PGDA high-resolution LOLA topography for lunar south-pole sites product page. The page's indexed content lists these 27 site/product families.",
+  "source_check_date": "2026-11-14",
+  "sites": [
+    {
+      "site_code": "Site01",
+      "region_name": "Connecting Ridge",
+      "source_shorthand": "R01 / Site01",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site04",
+      "region_name": "Shackleton Rim",
+      "source_shorthand": "R04 / Site04",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site06",
+      "region_name": "Nobile Rim 1",
+      "source_shorthand": "R06 / Site06",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site07",
+      "region_name": "Peak Near Shackleton",
+      "source_shorthand": "R07 / Site07",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site11",
+      "region_name": "de Gerlache Rim 1",
+      "source_shorthand": "R11 / Site11",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site20",
+      "region_name": "Leibnitz Beta Plateau",
+      "source_shorthand": "R20 / Site20",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site20v2",
+      "region_name": "Leibnitz Beta Plateau (extended boundaries)",
+      "source_shorthand": "R20v2",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site23",
+      "region_name": "Malapert Massif",
+      "source_shorthand": "R23 / Site23",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Site42",
+      "region_name": "de Gerlache-Kocher Massif",
+      "source_shorthand": "R42 / Site42",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Haworth",
+      "region_name": "Haworth",
+      "source_shorthand": "Haworth",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "Shoemaker",
+      "region_name": "Shoemaker",
+      "source_shorthand": "Shoemaker",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "DM1",
+      "region_name": "Amundsen Rim",
+      "source_shorthand": "DM1",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "DM2",
+      "region_name": "Nobile Rim 2",
+      "source_shorthand": "DM2",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "SL2",
+      "region_name": "de Gerlache Rim 2",
+      "source_shorthand": "SL2",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "SL3",
+      "region_name": "Connecting Ridge Extension",
+      "source_shorthand": "SL3",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "NPA",
+      "region_name": "Cabeus Exterior Wall 1",
+      "source_shorthand": "NPA",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "NPB",
+      "region_name": "Amundsen 1",
+      "source_shorthand": "NPB",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "NPC",
+      "region_name": "Idel'son L Crater 1",
+      "source_shorthand": "NPC",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "NPD",
+      "region_name": "Malapert Crater 1",
+      "source_shorthand": "NPD",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM1",
+      "region_name": "Shackleton Rim B",
+      "source_shorthand": "LM1",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM2",
+      "region_name": "Shoemaker Rim A",
+      "source_shorthand": "LM2",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM3",
+      "region_name": "Shoemaker Rim B",
+      "source_shorthand": "LM3",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM4",
+      "region_name": "Shoemaker Rim C",
+      "source_shorthand": "LM4",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM5",
+      "region_name": "Shoemaker Rim D",
+      "source_shorthand": "LM5",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM6",
+      "region_name": "Shoemaker Rim E",
+      "source_shorthand": "LM6",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM7",
+      "region_name": "Faustini Rim A",
+      "source_shorthand": "LM7",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    },
+    {
+      "site_code": "LM8",
+      "region_name": "Shoemaker Rim F",
+      "source_shorthand": "LM8",
+      "status": "listed_in_product_78_catalogue; individual downloadable files not yet linked/verified by this package",
+      "direct_download_urls": []
+    }
+  ]
+}
