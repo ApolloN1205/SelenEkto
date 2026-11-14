@@ -1,0 +1,6 @@
+
+[geo]
+rasterio>=1.3
+
+[test]
+pytest>=8

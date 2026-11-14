@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/",
+  "source_status": "official PGDA page inspected 2026-11-14; page explicitly lists these six site sections and their six product links each",
+  "common_metadata": {
+    "spatial_resolution_m_per_pixel": 5,
+    "raster_projection_description": "South polar stereographic X/Y coordinates in metres",
+    "lunar_reference_frame": "MOON_ME",
+    "ephemeris_association": "DE421",
+    "raster_format": "GeoTIFF (except XYZI point-cloud products)",
+    "note": "Use the actual GeoTIFF metadata and README for exact projection parameters, registration, vertical datum, NoData values and units before processing. Do not infer an EPSG code from this summary."
+  },
+  "sites": [
+    {
+      "site_code": "Site01",
+      "region_name": "Connecting Ridge",
+      "m2m_shorthand": "R01 / Site01",
+      "candidate_2022_match": "Connecting Ridge",
+      "match_status": "direct_name_and_shorthand_match"
+    },
+    {
+      "site_code": "Site04",
+      "region_name": "Shackleton Rim",
+      "m2m_shorthand": "R04 / Site04",
+      "candidate_2022_match": null,
+      "match_status": "not_in_2022_13_region_list; nearby named feature"
+    },
+    {
+      "site_code": "Site07",
+      "region_name": "Peak near Shackleton",
+      "m2m_shorthand": "R07 / Site07",
+      "candidate_2022_match": "Peak Near Shackleton",
+      "match_status": "direct_name_and_shorthand_match"
+    },
+    {
+      "site_code": "Site11",
+      "region_name": "de Gerlache rim",
+      "m2m_shorthand": "R11 / Site11",
+      "candidate_2022_match": "de Gerlache Rim 1",
+      "match_status": "data_book_shorthand_match; PGDA page uses shortened name"
+    },
+    {
+      "site_code": "Site20",
+      "region_name": "Leibnitz beta plateau",
+      "m2m_shorthand": "R20 / Site20",
+      "candidate_2022_match": "Leibnitz Beta Plateau",
+      "match_status": "direct_name_and_shorthand_match"
+    },
+    {
+      "site_code": "Site23",
+      "region_name": "Malapert massif",
+      "m2m_shorthand": "R23 / Site23",
+      "candidate_2022_match": "Malapert Massif",
+      "match_status": "direct_name_and_shorthand_match"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+﻿# Python environments
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Original scientific datasets
+/data/raw/**
+!/data/raw/**/.gitkeep
+
+# Regenerable processed data
+/data/processed/**
+!/data/processed/**/.gitkeep
+
+# Local caches
+/data/cache/**
+!/data/cache/**/.gitkeep
+
+# Temporary and incomplete downloads
+*.part
+*.tmp
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Local backups
+.local_backups/

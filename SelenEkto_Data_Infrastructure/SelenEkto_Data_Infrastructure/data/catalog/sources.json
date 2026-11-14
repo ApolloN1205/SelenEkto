@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "source_id": "NASA_ARTEMIS_13",
+      "title": "NASA Identifies Candidate Regions for Landing Next Americans on Moon",
+      "provider": "NASA",
+      "url": "https://www.nasa.gov/news-release/nasa-identifies-candidate-regions-for-landing-next-americans-on-moon/",
+      "publication_date": "2022-08-19",
+      "source_type": "challenge-region list",
+      "status": "verified_page",
+      "notes": "Lists the original 13 Artemis III candidate landing regions; each region approx. 15 km by 15 km, and candidate landing sites within regions are smaller (~100 m radius)."
+    },
+    {
+      "source_id": "NASA_M2M_30044",
+      "title": "Moon to Mars Lunar Surface Data Book",
+      "provider": "NASA",
+      "url": "https://ntrs.nasa.gov/citations/20250002845",
+      "document_number": "M2M-30044 / NASA/TP-20250002845",
+      "publication_date": "2025-03-18",
+      "source_type": "technical reference / coordinate catalogue",
+      "status": "verified_page_and_table",
+      "notes": "Appendix A, Table A2.1-1, p.75 lists lunar south-pole feature shorthand, names, latitude and longitude. The text states coordinates were generated from PGDA DEM files and original polygon centre points are accurate to 5\u201310 m."
+    },
+    {
+      "source_id": "PGDA_LOLA_5MPP",
+      "title": "South Pole Landing Site LOLA DEMs",
+      "provider": "NASA GSFC PGDA",
+      "url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/",
+      "source_type": "dataset download index",
+      "status": "verified_listing",
+      "notes": "Explicitly lists 6 site sections and their LDEM, XYZI, LDEC, slope, total-Z uncertainty and slope-uncertainty files. Describes 5 m/pixel GeoTIFFs, south polar stereographic X/Y metres, MOON_ME, DE421."
+    },
+    {
+      "source_id": "PGDA_PRODUCT_78",
+      "title": "High-Resolution LOLA Topography for Lunar South Pole Sites",
+      "provider": "NASA GSFC PGDA",
+      "url": "https://pgda.gsfc.nasa.gov/products/78",
+      "source_type": "dataset product catalogue",
+      "status": "verified_catalogue_listing",
+      "notes": "Lists 27 site/product families; this package does not assume unlinked files or uniform asset templates are verified."
+    },
+    {
+      "source_id": "PGDA_PRODUCT_81",
+      "title": "South Pole LOLA DEM Mosaic",
+      "provider": "NASA GSFC PGDA",
+      "url": "https://pgda.gsfc.nasa.gov/products/81",
+      "source_type": "dataset product page",
+      "status": "verified_product_page",
+      "notes": "Regional south-pole DEM mosaic; large download, not automatically acquired by this package."
+    },
+    {
+      "source_id": "JPL_HORIZONS_API",
+      "title": "Horizons API",
+      "provider": "NASA/JPL Solar System Dynamics",
+      "url": "https://ssd-api.jpl.nasa.gov/doc/horizons.html",
+      "source_type": "API documentation",
+      "status": "verified_documentation",
+      "notes": "Observer ephemeris API; this package uses observer quantities 4 (apparent azimuth/elevation) for a user-defined lunar site, subject to a live query test by the user environment."
+    },
+    {
+      "source_id": "JPL_HORIZONS_MANUAL",
+      "title": "Horizons System Manual",
+      "provider": "NASA/JPL Solar System Dynamics",
+      "url": "https://ssd.jpl.nasa.gov/horizons/manual.html",
+      "source_type": "technical manual",
+      "status": "verified_documentation",
+      "notes": "Explains non-Earth topocentric site definition, Moon (301), coordinate triplet order E-long, latitude, altitude km, and Moon mean-Earth DE421 geodetic convention."
+    },
+    {
+      "source_id": "NAIF_LUNAR_KERNELS",
+      "title": "NAIF Lunar SPICE Data",
+      "provider": "NASA/JPL NAIF",
+      "url": "https://naif.jpl.nasa.gov/naif/data_lunar.html",
+      "source_type": "SPICE kernel archive",
+      "status": "catalogue_reference",
+      "notes": "Investigate relevant lunar orientation, ephemeris, leapseconds and frame kernels before implementing offline SPICE."
+    },
+    {
+      "source_id": "PDS",
+      "title": "NASA Planetary Data System",
+      "provider": "NASA PDS",
+      "url": "https://pds.nasa.gov/",
+      "source_type": "data archive portal",
+      "status": "catalogue_reference"
+    },
+    {
+      "source_id": "LPI_SOUTH_POLE_ATLAS",
+      "title": "Lunar South Pole Atlas",
+      "provider": "Lunar and Planetary Institute",
+      "url": "https://www.lpi.usra.edu/lunar/lunar-south-pole-atlas/",
+      "source_type": "scientific atlas",
+      "status": "reference_only"
+    },
+    {
+      "source_id": "MOON_TREK",
+      "title": "Moon Trek",
+      "provider": "NASA",
+      "url": "https://trek.nasa.gov/moon/",
+      "source_type": "visualisation tool",
+      "status": "reference_only"
+    },
+    {
+      "source_id": "QUICKMAP",
+      "title": "LROC QuickMap",
+      "provider": "Arizona State University / LROC",
+      "url": "https://quickmap.lroc.asu.edu/",
+      "source_type": "visualisation tool",
+      "status": "reference_only"
+    },
+    {
+      "source_id": "DIVINER_PDS",
+      "title": "Diviner Data Sets",
+      "provider": "NASA PDS Geosciences Node",
+      "url": "https://pds-geosciences.wustl.edu/missions/lro/diviner.htm",
+      "source_type": "dataset archive",
+      "status": "catalogue_reference"
+    },
+    {
+      "source_id": "LROC_DTM_CONNECTING_RIDGE",
+      "title": "Shackleton\u2013de Gerlache Connecting Ridge DTM",
+      "provider": "LROC / ASU",
+      "url": "https://wms.lroc.asu.edu/lroc/view_rdr/NAC_DTM_SHACKRDGE02",
+      "source_type": "derived terrain product",
+      "status": "reference_only"
+    },
+    {
+      "source_id": "LROC_DTM_MALAPERT",
+      "title": "Malapert Massif LROC DTM",
+      "provider": "LROC / ASU",
+      "url": "https://wms.lroc.asu.edu/lroc/view_rdr/NAC_DTM_ESALL_MP1",
+      "source_type": "derived terrain product",
+      "status": "reference_only"
+    },
+    {
+      "source_id": "LROC_DTM_NOBILE",
+      "title": "Nobile\u2013Malapert LROC DTM",
+      "provider": "LROC / ASU",
+      "url": "https://wms.lroc.asu.edu/lroc/view_rdr/NAC_DTM_NOBILE01",
+      "source_type": "derived terrain product",
+      "status": "reference_only"
+    }
+  ]
+}

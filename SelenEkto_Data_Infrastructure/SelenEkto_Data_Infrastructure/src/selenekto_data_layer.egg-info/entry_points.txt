@@ -1,0 +1,2 @@
+[console_scripts]
+selenekto-data = selenekto_data.cli:main
