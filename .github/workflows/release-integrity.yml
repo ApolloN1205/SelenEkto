@@ -38,7 +38,7 @@ jobs:
 
       - name: Run release-gate regression tests
         working-directory: SelenEkto_Data_Infrastructure
-        run: python -m pytest -q tests/test_final_release_gate.py tests/test_release_privacy.py
+        run: python -m pytest -q tests/test_final_release_gate.py tests/test_release_privacy.py tests/test_public_profile_portability.py
 
       - name: Check for tracked Windows builds
         shell: bash
