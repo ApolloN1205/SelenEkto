@@ -1,0 +1,9 @@
+{
+  "theme": "Obsidian",
+  "accent": "Aurora LOLA",
+  "font_size": 12,
+  "default_layer": "Slope",
+  "solar_duration_hours": 72,
+  "solar_interval_minutes": 60,
+  "confirm_candidate_removal": true
+}

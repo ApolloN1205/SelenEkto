@@ -1,0 +1,301 @@
+{
+  "schema_version": "3.0",
+  "report_type": "selenekto_site_terrain_profile",
+  "site_code": "LM1",
+  "region_name": "Shackleton Rim B",
+  "generated_utc": "2026-11-15T03:05:07.329504+00:00",
+  "source": "NASA/GSFC PGDA LOLA 5mpp (local original GeoTIFFs)",
+  "availability": "ready",
+  "grid": {
+    "width": 4000,
+    "height": 4000,
+    "pixel_count": 16000000,
+    "transform": [
+      5.0,
+      0.0,
+      2000.0,
+      0.0,
+      -5.0,
+      18000.0
+    ],
+    "crs_wkt": "PROJCS[\"unknown\",GEOGCS[\"unknown\",DATUM[\"unknown\",SPHEROID[\"unknown\",1737400,0]],PRIMEM[\"Reference meridian\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]",
+    "bounds": [
+      2000.0,
+      -2000.0,
+      22000.0,
+      18000.0
+    ],
+    "resolution_xy_m": [
+      5.0,
+      5.0
+    ],
+    "all_five_layers_match": true
+  },
+  "layers": {
+    "elevation": {
+      "status": "ready",
+      "source_file": "LM1_final_adj_5mpp_surf.tif",
+      "units": "m",
+      "statistics": {
+        "total_pixels": 16000000,
+        "valid_pixels": 16000000,
+        "missing_or_masked_pixels": 0,
+        "valid_coverage_percent": 100.0,
+        "minimum": -2084.3232421875,
+        "maximum": 1443.57666015625,
+        "mean": -216.6591448966591,
+        "standard_deviation_population": 688.0756532407864,
+        "statistic_status": "valid",
+        "median": -330.00335693359375,
+        "percentile_02": -1210.666748046875,
+        "percentile_98": 1254.379638671875,
+        "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)"
+      }
+    },
+    "slope": {
+      "status": "ready",
+      "source_file": "LM1_final_adj_5mpp_slp.tif",
+      "units": "degrees",
+      "statistics": {
+        "total_pixels": 16000000,
+        "valid_pixels": 16000000,
+        "missing_or_masked_pixels": 0,
+        "valid_coverage_percent": 100.0,
+        "minimum": 0.0,
+        "maximum": 69.04856872558594,
+        "mean": 12.864140676510166,
+        "standard_deviation_population": 9.325044712861702,
+        "statistic_status": "valid",
+        "median": 10.651803970336914,
+        "percentile_02": 1.2266881465911865,
+        "percentile_98": 34.533226013183594,
+        "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)"
+      }
+    },
+    "elevation_uncertainty": {
+      "status": "ready",
+      "source_file": "LM1_final_adj_5mpp_toterr.tif",
+      "units": "RMS m",
+      "statistics": {
+        "total_pixels": 16000000,
+        "valid_pixels": 16000000,
+        "missing_or_masked_pixels": 0,
+        "valid_coverage_percent": 100.0,
+        "minimum": 0.061169229447841644,
+        "maximum": 5.926779747009277,
+        "mean": 0.3782515618835059,
+        "standard_deviation_population": 0.1951668251992794,
+        "statistic_status": "valid",
+        "median": 0.33636459708213806,
+        "percentile_02": 0.1379871666431427,
+        "percentile_98": 0.9016841053962708,
+        "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)"
+      }
+    },
+    "slope_uncertainty": {
+      "status": "ready",
+      "source_file": "LM1_final_adj_5mpp_slperr.tif",
+      "units": "RMS degrees",
+      "statistics": {
+        "total_pixels": 16000000,
+        "valid_pixels": 16000000,
+        "missing_or_masked_pixels": 0,
+        "valid_coverage_percent": 100.0,
+        "minimum": 0.5699434280395508,
+        "maximum": 25.18218231201172,
+        "mean": 1.8457269946488626,
+        "standard_deviation_population": 0.6481144398415765,
+        "statistic_status": "valid",
+        "median": 1.7068969011306763,
+        "percentile_02": 1.122706651687622,
+        "percentile_98": 3.807354211807251,
+        "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)"
+      }
+    },
+    "measurement_count": {
+      "status": "ready",
+      "source_file": "LM1_final_adj_5mpp_ldec.tif",
+      "units": "LOLA spots / pixel",
+      "statistics": {
+        "total_pixels": 16000000,
+        "valid_pixels": 16000000,
+        "missing_or_masked_pixels": 0,
+        "valid_coverage_percent": 100.0,
+        "minimum": 0.0,
+        "maximum": 5.0,
+        "mean": 0.103982,
+        "standard_deviation_population": 0.3233357290433583,
+        "statistic_status": "valid",
+        "median": 0.0,
+        "percentile_02": 0.0,
+        "percentile_98": 1.0,
+        "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)",
+        "spot_count_distribution": [
+          {
+            "spots_per_pixel": 0,
+            "pixel_count": 14423779,
+            "percentage_of_valid_pixels": 90.14861875
+          },
+          {
+            "spots_per_pixel": 1,
+            "pixel_count": 1492142,
+            "percentage_of_valid_pixels": 9.3258875
+          },
+          {
+            "spots_per_pixel": 2,
+            "pixel_count": 80769,
+            "percentage_of_valid_pixels": 0.50480625
+          },
+          {
+            "spots_per_pixel": 3,
+            "pixel_count": 3213,
+            "percentage_of_valid_pixels": 0.02008125
+          },
+          {
+            "spots_per_pixel": 4,
+            "pixel_count": 92,
+            "percentage_of_valid_pixels": 0.000575
+          },
+          {
+            "spots_per_pixel": 5,
+            "pixel_count": 5,
+            "percentage_of_valid_pixels": 3.125e-05
+          }
+        ],
+        "pixels_with_at_least_one_spot": 1576221,
+        "pixels_with_at_least_one_spot_percent": 9.85138125
+      }
+    }
+  },
+  "readable_metrics": {
+    "elevation": {
+      "status": "ready",
+      "units": "m",
+      "minimum": -2084.3232421875,
+      "maximum": 1443.57666015625,
+      "mean": -216.6591448966591,
+      "median": -330.00335693359375,
+      "standard_deviation": 688.0756532407864,
+      "valid_pixels": 16000000,
+      "valid_coverage_percent": 100.0,
+      "median_is_approximate": true
+    },
+    "slope": {
+      "status": "ready",
+      "units": "degrees",
+      "minimum": 0.0,
+      "maximum": 69.04856872558594,
+      "mean": 12.864140676510166,
+      "median": 10.651803970336914,
+      "standard_deviation": 9.325044712861702,
+      "valid_pixels": 16000000,
+      "valid_coverage_percent": 100.0,
+      "median_is_approximate": true
+    },
+    "elevation_uncertainty": {
+      "status": "ready",
+      "units": "RMS m",
+      "minimum": 0.061169229447841644,
+      "maximum": 5.926779747009277,
+      "mean": 0.3782515618835059,
+      "median": 0.33636459708213806,
+      "standard_deviation": 0.1951668251992794,
+      "valid_pixels": 16000000,
+      "valid_coverage_percent": 100.0,
+      "median_is_approximate": true
+    },
+    "slope_uncertainty": {
+      "status": "ready",
+      "units": "RMS degrees",
+      "minimum": 0.5699434280395508,
+      "maximum": 25.18218231201172,
+      "mean": 1.8457269946488626,
+      "median": 1.7068969011306763,
+      "standard_deviation": 0.6481144398415765,
+      "valid_pixels": 16000000,
+      "valid_coverage_percent": 100.0,
+      "median_is_approximate": true
+    },
+    "measurement_count": {
+      "status": "ready",
+      "units": "LOLA spots / pixel",
+      "minimum": 0.0,
+      "maximum": 5.0,
+      "mean": 0.103982,
+      "median": 0.0,
+      "standard_deviation": 0.3233357290433583,
+      "valid_pixels": 16000000,
+      "valid_coverage_percent": 100.0,
+      "median_is_approximate": true,
+      "pixels_with_at_least_one_spot_percent": 9.85138125,
+      "spot_count_distribution": [
+        {
+          "spots_per_pixel": 0,
+          "pixel_count": 14423779,
+          "percentage_of_valid_pixels": 90.14861875
+        },
+        {
+          "spots_per_pixel": 1,
+          "pixel_count": 1492142,
+          "percentage_of_valid_pixels": 9.3258875
+        },
+        {
+          "spots_per_pixel": 2,
+          "pixel_count": 80769,
+          "percentage_of_valid_pixels": 0.50480625
+        },
+        {
+          "spots_per_pixel": 3,
+          "pixel_count": 3213,
+          "percentage_of_valid_pixels": 0.02008125
+        },
+        {
+          "spots_per_pixel": 4,
+          "pixel_count": 92,
+          "percentage_of_valid_pixels": 0.000575
+        },
+        {
+          "spots_per_pixel": 5,
+          "pixel_count": 5,
+          "percentage_of_valid_pixels": 3.125e-05
+        }
+      ]
+    }
+  },
+  "dataset_provenance": [
+    {
+      "layer": "elevation",
+      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\LM1\\LM1_final_adj_5mpp_surf.tif",
+      "file_size_bytes": 64033673
+    },
+    {
+      "layer": "slope",
+      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\LM1\\LM1_final_adj_5mpp_slp.tif",
+      "file_size_bytes": 64033645
+    },
+    {
+      "layer": "elevation_uncertainty",
+      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\LM1\\LM1_final_adj_5mpp_toterr.tif",
+      "file_size_bytes": 64033683
+    },
+    {
+      "layer": "slope_uncertainty",
+      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\LM1\\LM1_final_adj_5mpp_slperr.tif",
+      "file_size_bytes": 64033681
+    },
+    {
+      "layer": "measurement_count",
+      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\LM1\\LM1_final_adj_5mpp_ldec.tif",
+      "file_size_bytes": 64033613
+    }
+  ],
+  "errors": [],
+  "notes": [
+    "Each layer is recalculated from its own local raster.",
+    "Valid counts, mean, min, max and population standard deviation use all valid raster pixels.",
+    "Median and percentiles are sampled estimates, not exact full-raster statistics.",
+    "Zero LOLA spots is a valid count, not missing data.",
+    "A region-average slope does not describe a particular candidate pixel.",
+    "NoData stays null. No other region is used to fill missing pixels."
+  ]
+}

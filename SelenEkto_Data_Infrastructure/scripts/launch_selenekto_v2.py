@@ -1,4 +1,4 @@
-"""SELENEKTO 2.0 — PySide6 map-first desktop shell.
+"""SelenEkto 2.0 — PySide6 map-first desktop shell.
 
 New launcher; does not modify the original desktop viewers.
 Requires PySide6, matplotlib, rasterio and numpy in the active venv.
@@ -17,13 +17,17 @@ from selenekto_v2.core import (SUFFIXES, METRICS,region_names,region_health,rast
     read_cell,validate_name,load_candidates,save_candidates,comparable)
 
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QFrame,QLabel,QVBoxLayout,QHBoxLayout,
  QComboBox,QPushButton,QListWidget,QListWidgetItem,QStackedWidget,QTableWidget,QTableWidgetItem,
  QSplitter,QInputDialog,QMessageBox,QAbstractItemView,QLineEdit,QTextEdit,QHeaderView,
- QSpinBox,QDateEdit,QFormLayout,QGroupBox,QScrollArea)
+ QSpinBox,QDateEdit,QFormLayout,QGroupBox,QScrollArea,QDialog)
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as Canvas
 import numpy as np
+from selenekto_v2.actual_regions import refresh_saved_candidates
+from selenekto_v2.neon_solar import parse_saved_result
+from selenekto_v2.region_data import load_profiles, METRIC_COLUMNS, metric_value
 
 BG='#080A0D';PANEL='#141820';BORDER='#303846';FG='#EEF1F5';MUTED='#A6B0C0';ACCENT='#E77F71'
 STYLE=f"""
@@ -67,7 +71,9 @@ class Plot(QWidget):
 
 class Main(QMainWindow):
     def __init__(self):
-        super().__init__();self.setWindowTitle('SELENEKTO 2.0 / LUNAR NAVIGATOR')
+        super().__init__();self.setWindowTitle('SelenEkto 2.0 · Lunar Navigator')
+        self.logo_path=ROOT/'assets/branding/logo.png'
+        if self.logo_path.is_file():self.setWindowIcon(QIcon(str(self.logo_path)))
         self.resize(1460,900)
         self.records=[];self.selected_cell=None;self.active_arr=None;self.active_dims=None
         self.layer='Elevation';self.region=None;self.map_img=None;self.marker=None
@@ -76,7 +82,12 @@ class Main(QMainWindow):
         outer=QWidget();self.setCentralWidget(outer);layout=QHBoxLayout(outer)
         sidebar=QFrame();sidebar.setObjectName('sidebar');sidebar.setFixedWidth(206)
         side=QVBoxLayout(sidebar)
-        mast=label('S E L E N E K T O');mast.setStyleSheet(f'font-size:17px;font-weight:bold;color:{FG};')
+        mast=label('SelenEkto');mast.setStyleSheet(f'font-size:19px;font-weight:bold;color:{FG};')
+        if self.logo_path.is_file():
+            img=QLabel();pix=QPixmap(str(self.logo_path))
+            if not pix.isNull():
+                img.setPixmap(pix.scaled(68,68,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
+                side.addWidget(img)
         side.addWidget(mast);side.addWidget(label('LUNAR LANDING-SITE NAVIGATOR',True))
         self.nav=QListWidget();self.nav.setSpacing(3)
         for item in ['Explorer','Illumination','Compare','Data Health','Settings']:
@@ -100,7 +111,7 @@ class Main(QMainWindow):
 
     def make_explorer(self):
         w=QWidget();l=QVBoxLayout(w)
-        l.addWidget(label('EXPLORER  /  NASA PGDA TERRAIN'))
+        l.addWidget(label('SelenEkto / Explorer / NASA PGDA terrain'))
         bar=QHBoxLayout();l.addLayout(bar)
         bar.addWidget(label('Region'))
         self.region_box=QComboBox();bar.addWidget(self.region_box,2)
@@ -249,34 +260,122 @@ class Main(QMainWindow):
 
     def make_compare(self):
         w=QWidget();l=QVBoxLayout(w)
-        l.addWidget(label('COMPARE  /  SELECT THE CANDIDATES YOU WANT'))
+        l.addWidget(label('SelenEkto / Compare selected sites'))
         l.addWidget(label('Ctrl+click multiple rows. Metrics are observations, not suitability ratings.',True))
         self.compare_table=QTableWidget();self.configure_candidates_table(self.compare_table);self.compare_table.setMaximumHeight(230)
         l.addWidget(self.compare_table)
         top=QHBoxLayout();l.addLayout(top)
-        top.addWidget(btn('Compare selected metrics',self.compare_metrics))
+        top.addWidget(btn('Compare chosen candidate data',self.compare_metrics))
+        top.addWidget(btn('Refresh saved pixel data',self.refresh_candidate_data))
         top.addWidget(label('Side-by-side imagery:',True));self.left_box=QComboBox();self.right_box=QComboBox();top.addWidget(self.left_box);top.addWidget(self.right_box)
         self.comp_layer=QComboBox();self.comp_layer.addItems(SUFFIXES);top.addWidget(self.comp_layer)
         top.addWidget(btn('Show image comparison',self.compare_images))
-        self.compare_status=label('Select at least two named candidates from the table.',True);l.addWidget(self.compare_status)
+        detail=QHBoxLayout();l.addLayout(detail)
+        detail.addWidget(label('Candidate measurement:'))
+        self.candidate_metric=QComboBox()
+        self.candidate_metric.addItems(['Slope (degrees)','Elevation (metres)','Elevation RMS (metres)','Slope RMS (degrees)','LOLA spots per pixel'])
+        detail.addWidget(self.candidate_metric)
+        detail.addWidget(btn('Compare ALL region JSON statistics',self.show_region_comparison))
+        self.compare_status=label('Select two or more named candidates above. Region averages are available separately.',True);l.addWidget(self.compare_status)
         self.compare_plot=Plot();l.addWidget(self.compare_plot,1)
         return w
+
+    def refresh_candidate_data(self):
+        try:
+            result=refresh_saved_candidates(ROOT)
+            self.records=load_candidates(ROOT)
+            self.refresh_candidates()
+            self.compare_status.setText(f"Refreshed {result['updated']}/{result['count']} candidate cells from actual NASA GeoTIFFs. Unavailable: {result['unavailable']}.")
+            if result['errors']:self.warn('Missing NASA data', '\n'.join(result['errors'][:8]))
+        except Exception as exc:self.warn('Candidate data refresh failed',exc)
 
     def compare_metrics(self):
         indices=self.selected_record_indices(self.compare_table)
         try:
             records=comparable(self.records,indices)
-            self.compare_plot.reset('Selected candidates / terrain metrics')
+            mapping={
+                'Slope (degrees)':('slope_deg','degrees'),
+                'Elevation (metres)':('elevation_m','metres'),
+                'Elevation RMS (metres)':('elevation_rms_m','RMS metres'),
+                'Slope RMS (degrees)':('slope_rms_deg','RMS degrees'),
+                'LOLA spots per pixel':('lola_spot_count','spots/pixel'),
+            }
+            field, unit=mapping[self.candidate_metric.currentText()]
+            values=[r.get(field) if r.get(field) is not None else np.nan for r in records]
+            if not any(np.isfinite(v) for v in values):
+                self.warn('No candidate measurements','All selected candidates have NoData for this layer.');return
+            self.compare_plot.fig.clear()
+            ax=self.compare_plot.fig.add_subplot(111);ax.set_facecolor(BG)
             names=[f"{r['name']} ({r['region']})" for r in records]
-            x=np.arange(len(records));width=.35
-            for offset,key,title in [(-.18,'slope_deg','Slope (degrees)'),(.18,'elevation_rms_m','Elevation RMS (m)')]:
-                values=[r.get(key) if r.get(key) is not None else np.nan for r in records]
-                self.compare_plot.ax.bar(x+offset,values,width,label=title)
-            self.compare_plot.ax.set_xticks(x,names,rotation=15,ha='right',fontsize=8)
-            self.compare_plot.ax.legend(facecolor=PANEL,labelcolor=FG)
-            self.compare_plot.finish()
-            self.compare_status.setText(f'Comparing {len(records)} independently sampled candidate locations.')
+            bars=ax.bar(range(len(records)),values,color='#BFC9D6',width=.65)
+            ax.set_xticks(range(len(records)),names,rotation=15,ha='right',fontsize=9)
+            ax.set_ylabel(unit,color=MUTED)
+            ax.set_title('Candidate pixel / '+self.candidate_metric.currentText(),color=FG)
+            ax.tick_params(colors=MUTED)
+            for spine in ax.spines.values():spine.set_color(BORDER)
+            for bar,value in zip(bars,values):
+                if np.isfinite(value):
+                    ax.annotate(f'{value:.3f}',(bar.get_x()+bar.get_width()/2,bar.get_height()),
+                                textcoords='offset points',xytext=(0,4),ha='center',color=FG,fontsize=9)
+            self.compare_plot.fig.tight_layout();self.compare_plot.canvas.draw_idle()
+            self.compare_status.setText(f'{len(records)} named cells compared using full-resolution per-pixel {unit}. NoData omitted.')
         except Exception as exc:self.warn('Comparison unavailable',exc)
+
+    def show_region_comparison(self):
+        try:
+            profiles=load_profiles(ROOT/'data/catalog/region_profiles')
+            if not profiles:
+                self.warn('No region JSON profiles','First run scripts/build_all_region_json.py and scripts/prepare_region_data.py.');return
+            dialog=QDialog(self)
+            dialog.setWindowTitle('SelenEkto / Region Data Comparison')
+            dialog.resize(1180,760)
+            layout=QVBoxLayout(dialog)
+            layout.addWidget(label('REGION-WIDE NASA TERRAIN STATISTICS (NOT individual landing-candidate readings)'))
+            controls=QHBoxLayout();layout.addLayout(controls)
+            controls.addWidget(label('Plot region metric:'))
+            metric_box=QComboBox();metric_box.addItems(METRIC_COLUMNS.keys());controls.addWidget(metric_box,2)
+            controls.addWidget(label('Ctrl+click rows to choose regions for graph.',True),3)
+            table=QTableWidget();table.setColumnCount(3+len(METRIC_COLUMNS))
+            table.setHorizontalHeaderLabels(['Region','Name','Status']+list(METRIC_COLUMNS))
+            table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+            table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+            table.setAlternatingRowColors(True)
+            table.setRowCount(len(profiles))
+            for i,p in enumerate(profiles):
+                row=[p.get('site_code','?'),p.get('region_name',''),p.get('availability','unknown')]
+                row.extend(metric_value(p,m) for m in METRIC_COLUMNS)
+                for j,value in enumerate(row):
+                    item=QTableWidgetItem('NoData' if value is None else f'{value:.3f}' if isinstance(value,(int,float)) else str(value))
+                    item.setData(Qt.ItemDataRole.UserRole, i)
+                    table.setItem(i,j,item)
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+            table.setSortingEnabled(True)
+            layout.addWidget(table,2)
+            chart=Plot();layout.addWidget(chart,3)
+            def plot_rows():
+                selected=sorted({table.item(i.row(),0).data(Qt.ItemDataRole.UserRole)
+                                 for i in table.selectionModel().selectedRows()})
+                if not selected:selected=list(range(len(profiles)))
+                m=metric_box.currentText()
+                selected=[i for i in selected if metric_value(profiles[i],m) is not None]
+                chart.fig.clear();ax=chart.fig.add_subplot(111);ax.set_facecolor(BG)
+                if selected:
+                    values=[metric_value(profiles[i],m) for i in selected]
+                    names=[profiles[i].get('site_code','?') for i in selected]
+                    ax.bar(range(len(selected)),values,color='#BFC9D6',width=.7)
+                    ax.set_xticks(range(len(selected)),names,rotation=45,ha='right',fontsize=8)
+                else:
+                    ax.text(.5,.5,'No valid region data for this metric',ha='center',va='center',color=FG,transform=ax.transAxes)
+                ax.set_title(m+' / region-wide summary',color=FG)
+                ax.tick_params(colors=MUTED)
+                for spine in ax.spines.values():spine.set_color(BORDER)
+                chart.fig.tight_layout();chart.canvas.draw_idle()
+            metric_box.currentIndexChanged.connect(plot_rows)
+            table.itemSelectionChanged.connect(plot_rows)
+            plot_rows()
+            layout.addWidget(label('Mean/min/max are full-raster statistics; medians are approximate spatial samples. Missing data is not zero.',True))
+            dialog.exec()
+        except Exception as exc:self.warn('Region data comparison unavailable',exc)
 
     def compare_images(self):
         if len(self.records)<2:self.warn('Add candidates','Save two or more candidates to compare local images.');return
@@ -312,46 +411,71 @@ class Main(QMainWindow):
 
     def make_illumination(self):
         w=QWidget();l=QVBoxLayout(w)
-        l.addWidget(label('ILLUMINATION  /  TERRAIN HORIZON & SUN POSITIONS'))
-        l.addWidget(label('Use existing verified Site01 solar viewer. Multi-region solar modelling requires independent horizons and reference-frame checks.',True))
+        l.addWidget(label('SelenEkto / Solar & Horizon'))
+        l.addWidget(label('Neon yellow = real saved JPL Sun altitude; grey = local modelled horizon. Shaded region = RMS sensitivity scenarios, NOT confidence limits.',True))
         actions=QHBoxLayout();l.addLayout(actions)
-        actions.addWidget(btn('Open working solar + horizon viewer',self.open_solar))
-        actions.addWidget(btn('Show reference horizon graph',self.show_horizon))
-        actions.addWidget(btn('Open candidate solar results folder',self.open_solar_results))
-        self.solar_status=label('The original Site01 solar viewer remains available without modification.',True);l.addWidget(self.solar_status)
+        actions.addWidget(btn('Load latest solar results',self.load_latest_solar))
+        actions.addWidget(btn('Open analysis JSON',self.pick_solar_json))
+        actions.addWidget(btn('Show Site01 reference horizon',self.show_horizon))
+        self.solar_status=label('Load a previously calculated result. No solar values are fabricated.',True)
+        l.addWidget(self.solar_status)
         self.solarplot=Plot();l.addWidget(self.solarplot,1)
-        self.solarplot.reset('Load Site01 horizon results to view the 360° terrain profile');self.solarplot.finish()
+        self.solarplot.reset('Solar & horizon results');self.solarplot.finish()
         return w
 
-    def open_solar(self):
-        script=ROOT/'scripts/launch_selenekto.py'
-        if not script.exists():self.warn('Missing solar viewer',f'Not found: {script}');return
-        try:subprocess.Popen([sys.executable,str(script)],cwd=ROOT)
-        except Exception as exc:self.warn('Solar viewer could not start',exc)
+    def load_latest_solar(self):
+        base=ROOT/'data/processed'
+        paths=[]
+        for folder in ('solar','candidate_solar'):
+            if (base/folder).exists():paths += list((base/folder).rglob('*.json'))
+        # Only actual solar records can be plotted as solar data.
+        for path in sorted(paths,key=lambda p:p.stat().st_mtime,reverse=True):
+            try:
+                data=parse_saved_result(path)
+                if data['kind'] in ('solar','clearance'):
+                    self.plot_solar_result(data,path);return
+            except Exception:continue
+        self.solar_status.setText('No compatible saved JPL solar timeline found. Use your existing Site01 solar calculator to generate one, then click Load latest solar results.')
 
-    def open_solar_results(self):
-        path=ROOT/'data/processed/candidate_solar'
-        if path.exists():
-            from PySide6.QtGui import QDesktopServices
-            from PySide6.QtCore import QUrl
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
-        else:self.warn('No results yet','Run candidate solar calculations in the existing viewer first.')
+    def pick_solar_json(self):
+        from PySide6.QtWidgets import QFileDialog
+        chosen,_=QFileDialog.getOpenFileName(self,'Open solar or horizon result',str(ROOT/'data/processed'),'JSON (*.json)')
+        if not chosen:return
+        try:self.plot_solar_result(parse_saved_result(Path(chosen)),Path(chosen))
+        except Exception as exc:self.warn('Could not read analysis JSON',exc)
+
+    def plot_solar_result(self,data,path):
+        self.solarplot.reset(data['title'].replace('SELENEKTO','SelenEkto'))
+        ax=self.solarplot.ax
+        x=np.arange(len(data['labels']))
+        for line in data['lines']:
+            ax.plot(x,line['values'],lw=2.2,color=line['color'],label=line['name'])
+        lower,upper=data.get('lower'),data.get('upper')
+        if lower is not None and upper is not None and len(lower)==len(x) and len(upper)==len(x):
+            try:
+                lo=np.array([np.nan if v is None else float(v) for v in lower])
+                hi=np.array([np.nan if v is None else float(v) for v in upper])
+                ax.fill_between(x,lo,hi,color='#AAB4C1',alpha=.26,label='RMS sensitivity scenarios')
+            except (ValueError,TypeError):pass
+        if data['kind']=='clearance':ax.axhline(0,color='#8B97A8',linestyle='--')
+        step=max(1,len(x)//9)
+        labels=data['labels']
+        ax.set_xticks(x[::step])
+        ax.set_xticklabels([str(v) if data['kind']=='horizon' else str(v)[5:16].replace('T',' ') for v in labels[::step]],rotation=25,ha='right',fontsize=8)
+        ax.set_xlabel('Grid azimuth (degrees)' if data['kind']=='horizon' else 'UTC date/time',color=MUTED)
+        ax.set_ylabel('Angle (degrees)',color=MUTED)
+        ax.grid(color='#718092',alpha=.2)
+        ax.legend(facecolor=PANEL,labelcolor=FG,edgecolor=BORDER,fontsize=9)
+        self.solarplot.finish()
+        self.solar_status.setText(f'Loaded actual saved result: {path.name} · {data["kind"]} · not a verified landing-safety model')
 
     def show_horizon(self):
         path=ROOT/'data/processed/horizon/Site01/Site01_horizon_5km.json'
-        try:
-            d=json.loads(path.read_text(encoding='utf-8'))
-            angles=d['angles'];az=[x['grid_azimuth_deg'] for x in angles];e=[x['horizon_angle_deg'] for x in angles]
-            self.solarplot.reset('Site01 terrain horizon / grid-relative azimuth')
-            self.solarplot.ax.plot(az,e,color=FG,lw=1.4)
-            self.solarplot.ax.set_xlabel('Azimuth relative to projected grid +Y (°)',color=MUTED)
-            self.solarplot.ax.set_ylabel('Horizon angle (°)',color=MUTED)
-            self.solarplot.finish()
-            self.solar_status.setText('Local DEM-limited reference horizon; not an illumination timeline or landing-safety assessment.')
-        except Exception as exc:self.warn('Horizon result unavailable',exc)
+        try:self.plot_solar_result(parse_saved_result(path),path)
+        except Exception as exc:self.warn('Reference horizon unavailable',exc)
 
     def make_health(self):
-        w=QWidget();l=QVBoxLayout(w);l.addWidget(label('DATA HEALTH / INSTALLED NASA REGIONS'))
+        w=QWidget();l=QVBoxLayout(w);l.addWidget(label('SelenEkto / Data Health / installed NASA regions'))
         line=QHBoxLayout();l.addLayout(line)
         line.addWidget(btn('Refresh data health',self.refresh_health))
         line.addWidget(btn('Open JSON region profiles',self.open_profiles))
@@ -382,9 +506,9 @@ class Main(QMainWindow):
 
     def make_settings(self):
         w=QWidget();l=QVBoxLayout(w)
-        l.addWidget(label('SETTINGS  /  SCIENTIFIC TRANSPARENCY'))
+        l.addWidget(label('SelenEkto / Settings / scientific transparency'))
         content=QTextEdit();content.setReadOnly(True)
-        content.setPlainText('SELENEKTO 2.0\n\n'
+        content.setPlainText('SelenEkto 2.0\n\n'
            'Data source: NASA/GSFC PGDA LOLA 5m/pixel GeoTIFFs.\n'
            'The original TIFFs remain authoritative; JSON region profiles contain summary statistics.\n'
            'Map overviews are downsampled; clicked cell values come from full-resolution TIFFs.\n'
@@ -394,7 +518,7 @@ class Main(QMainWindow):
            'Solar timelines require NASA JPL ephemeris availability and validated lunar geometry.\n'
            'Scores or imagery cannot establish actual landing safety.\n\n'
            'This first PySide6 UI provides a reliable explorer and comparison shell.\n'
-           'The existing solar viewer is launched separately rather than claiming a new independent multi-region solar backend.\n')
+           'Solar and horizon JSON results are displayed directly in the Illumination tab.\n')
         l.addWidget(content,1)
         l.addWidget(label('Project folder: '+str(ROOT),True));return w
 

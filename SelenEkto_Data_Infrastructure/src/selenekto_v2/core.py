@@ -24,15 +24,23 @@ def region_names(root: Path):
 
 
 def region_files(root: Path, region: str):
+    """Return discovered TIFFs or canonical expected paths for missing layers."""
     if not region or not region.isalnum():
         raise ValueError('Invalid region ID')
-    base = root / 'data/raw/lola' / region
-    return {k: base / f'{region}_final_adj_5mpp_{v}.tif' for k, v in SUFFIXES.items()}
+    from selenekto_v2.actual_regions import find_rasters
+    raw = Path(root) / 'data/raw/lola'
+    found = find_rasters(raw, region)
+    mapping = {'Elevation': 'elevation', 'Slope': 'slope',
+               'Elevation uncertainty': 'elevation_uncertainty',
+               'Slope uncertainty': 'slope_uncertainty',
+               'LOLA observations': 'measurement_count'}
+    return {label: found.get(layer) or raw / region / f'{region}_final_adj_5mpp_{SUFFIXES[label]}.tif'
+            for label, layer in mapping.items()}
 
 
 def region_health(root: Path, region: str):
     paths = region_files(root, region)
-    missing = [label for label, path in paths.items() if not path.exists()]
+    missing = [label for label, path in paths.items() if path is None or not path.exists()]
     if missing:
         return {'region': region, 'status':'incomplete', 'details': 'Missing: ' + ', '.join(missing), 'missing': missing}
     try:
@@ -114,7 +122,7 @@ def candidates_path(root: Path):
 
 def load_candidates(root: Path):
     path=candidates_path(root)
-    if not path.exists(): return []
+    if path is None or not path.exists(): return []
     parsed=json.loads(path.read_text(encoding='utf-8'))
     if not isinstance(parsed,dict) or not isinstance(parsed.get('candidates'),list): raise ValueError('Invalid candidate store')
     return [normalize_record(x) for x in parsed['candidates']]
