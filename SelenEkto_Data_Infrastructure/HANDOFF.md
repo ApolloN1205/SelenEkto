@@ -1,7 +1,7 @@
 # SelenEkto — Current project handoff (15 November 2026)
 
 ## User's confirmed state
-- Windows 11 project: `C:\Users\Norbert\OneDrive\Documents\GitHub\SelenEkto\SelenEkto_Data_Infrastructure` (Git repo root is parent).
+- Windows 11 project: `<local-project-root>/SelenEkto_Data_Infrastructure` (Git repo root is parent).
 - PySide6 SelenEkto 2.0 is working. Features developed: Explorer, saved named candidates, visual comparison, JPL solar/horizon integration, Settings with accent colours, and adjustable preference comparison.
 - Site01 originally had five usable NASA 5mpp raster TIFFs and verified terrain-profile output.
 - Bulk download later attempted for 27 regions. User reports **LM8 incomplete**, **Site20 and Site23 invalid/misaligned**. Do not assert all 27 are usable or erase the problematic regions. State of other 24 regions requires verification locally.
