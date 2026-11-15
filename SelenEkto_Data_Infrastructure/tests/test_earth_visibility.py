@@ -7,6 +7,7 @@ from selenekto_data.earth_visibility import (
     summarise_earth_timeline,
     south_polar_stereographic_grid_north_offset_deg,
     site01_grid_north_offset_deg,
+    evaluate_site01_earth_timeline,
 )
 
 
@@ -111,3 +112,15 @@ def test_south_polar_grid_north_rejects_invalid_longitudes():
         south_polar_stereographic_grid_north_offset_deg(float("nan"))
     with pytest.raises(ValueError):
         south_polar_stereographic_grid_north_offset_deg(181.0)
+
+
+
+def test_site01_pipeline_applies_grid_north_offset():
+    positions = [{
+        "time_tag": "2026-Nov-15 12:00",
+        "azimuth_deg": 137.49,
+        "elevation_deg": 2.0,
+    }]
+    rows = evaluate_site01_earth_timeline(positions, flat_horizon())
+    assert rows[0]["grid_azimuth_deg"] == pytest.approx(0.0)
+    assert rows[0]["north_azimuth_deg"] == pytest.approx(137.49)
