@@ -163,6 +163,27 @@ def evaluate_earth_timeline(
     return output
 
 
+
+def evaluate_site01_earth_timeline(
+    positions: Iterable[dict[str, Any]],
+    horizon_records: Iterable[dict[str, Any]],
+    angular_radius_deg: float = EARTH_ANGULAR_RADIUS_DEG,
+) -> list[dict[str, Any]]:
+    """Evaluate Site01 using its provisional south-polar grid convergence.
+
+    This convenience wrapper applies the 222.51-degree grid-north offset
+    derived from the published Site01 longitude and DEM central meridian.
+    It is suitable for integration/testing, but results remain provisional
+    until the lunar coordinate-frame compatibility is independently verified.
+    """
+    return evaluate_earth_timeline(
+        positions,
+        horizon_records,
+        grid_north_offset_deg=site01_grid_north_offset_deg(),
+        angular_radius_deg=angular_radius_deg,
+    )
+
+
 def summarise_earth_timeline(rows: Iterable[dict[str, Any]]) -> dict[str, Any]:
     """Summarise sampled geometric visibility; fractions are sample-based, not durations."""
     records = list(rows)
