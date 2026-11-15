@@ -5,6 +5,8 @@ from selenekto_data.earth_visibility import (
     earth_disk_fraction_above_horizon,
     evaluate_earth_timeline,
     summarise_earth_timeline,
+    south_polar_stereographic_grid_north_offset_deg,
+    site01_grid_north_offset_deg,
 )
 
 
@@ -92,3 +94,20 @@ def test_summary_is_sample_based_and_disclaims_radio_link():
         sum(row["visible_disk_fraction"] for row in rows) / 3
     )
     assert "link budget" in GEOMETRIC_ONLY_WARNING
+
+
+
+def test_site01_south_polar_grid_north_offset():
+    # For the Site01 projection (south pole, central meridian 0), the local
+    # geographic-north direction at longitude -137.49 has grid bearing 222.51.
+    assert site01_grid_north_offset_deg() == pytest.approx(222.51)
+    assert south_polar_stereographic_grid_north_offset_deg(0.0) == 0.0
+    assert south_polar_stereographic_grid_north_offset_deg(45.0, 10.0) == 35.0
+    assert south_polar_stereographic_grid_north_offset_deg(-179.0, 179.0) == 2.0
+
+
+def test_south_polar_grid_north_rejects_invalid_longitudes():
+    with pytest.raises(ValueError):
+        south_polar_stereographic_grid_north_offset_deg(float("nan"))
+    with pytest.raises(ValueError):
+        south_polar_stereographic_grid_north_offset_deg(181.0)
