@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import json
 import sys
 from pathlib import Path
@@ -22,10 +23,20 @@ def fake_dist(root):
                  'scripts/old_before_fix.py',
                  'data/config/desktop_settings.json',
                  '_internal/runtime.dll',
+                 '_internal/python315.dll',
+                 '_internal/base_library.zip',
                  'release_manifest.json'):
         path=dist/name
         path.parent.mkdir(parents=True,exist_ok=True)
         if name.endswith('SelenEkto.exe'):content=b'MZ'+b'0'*512
+        elif name.endswith('python315.dll'):content=b'MZ'+b'0'*100000
+        elif name.endswith('base_library.zip'):
+            buffer=io.BytesIO()
+            with zipfile.ZipFile(buffer,'w') as packed:
+                packed.writestr('encodings/__init__.pyc', b'fake-bytecode')
+                packed.writestr('encodings/utf_8.pyc', b'fake-bytecode')
+                packed.writestr('padding.bin', b'0'*70000, compress_type=zipfile.ZIP_STORED)
+            content=buffer.getvalue()
         elif name.endswith('_slope.png'):content=b'\x89PNG\r\n\x1a\n'+b'PNG'
         elif name.endswith('settings_store.py'):content=b"DEFAULTS = {'default_layer': 'Slope'}\n#06070A"
         elif name.endswith('library_view.py'):content=b'REGIONS = tuple(region for region in REGIONS if region != "LM8")'
@@ -95,3 +106,49 @@ def test_builder_hardening_does_not_duplicate_imports(tmp_path):
     assert "'source_folder':str(root)" not in text
     gate.harden_builder(tmp_path)
     assert text == src.read_text()
+
+def test_release_audit_rejects_lfs_pointer_runtime(tmp_path):
+    dist=fake_dist(tmp_path)
+    stage=tmp_path/'stage'/'SelenEkto'
+    gate.copy_portable(dist,stage)
+    (stage/'_internal'/'base_library.zip').write_text(
+        'version https://git-lfs.github.com/spec/v1\n'
+        'oid sha256:' + '0'*64 + '\n'
+        'size 1425082\n'
+    )
+    errors=gate.audit(stage)['errors']
+    assert any('base_library.zip' in x for x in errors),errors
+    try:
+        gate.zip_release(stage,tmp_path/'should_not_ship.zip')
+    except RuntimeError as exc:
+        assert 'embedded Python runtime' in str(exc)
+    else:
+        raise AssertionError('Packaging must fail for LFS pointer runtime')
+
+
+def test_release_audit_rejects_missing_encodings(tmp_path):
+    dist=fake_dist(tmp_path)
+    stage=tmp_path/'stage'/'SelenEkto'
+    gate.copy_portable(dist,stage)
+    path=stage/'_internal'/'base_library.zip'
+    with zipfile.ZipFile(path,'w') as packed:
+        packed.writestr('unrelated.bin', b'0'*70000,compress_type=zipfile.ZIP_STORED)
+    errors=gate.audit(stage)['errors']
+    assert any('encodings' in x for x in errors),errors
+
+
+def test_release_audit_rejects_missing_python_dll(tmp_path):
+    dist=fake_dist(tmp_path)
+    stage=tmp_path/'stage'/'SelenEkto'
+    gate.copy_portable(dist,stage)
+    (stage/'_internal'/'python315.dll').unlink()
+    errors=gate.audit(stage)['errors']
+    assert any('Python DLL' in x for x in errors),errors
+
+
+def test_release_audit_accepts_verified_python_runtime(tmp_path):
+    dist=fake_dist(tmp_path)
+    stage=tmp_path/'stage'/'SelenEkto'
+    gate.copy_portable(dist,stage)
+    errors=gate.embedded_python_errors(stage)
+    assert errors == []
