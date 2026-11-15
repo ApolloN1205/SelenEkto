@@ -1,0 +1,117 @@
+name: Package repaired full Windows app
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/package-repaired-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-windows-zip:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download V1.0, overlay verified download fix, and repackage
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          @'
+          import hashlib
+          import json
+          import os
+          import shutil
+          import urllib.request
+          import zipfile
+          from pathlib import Path
+
+          repo = Path.cwd()
+          fixed_source = repo / "SelenEkto_Data_Infrastructure/src/selenekto_v2/library_view.py"
+          assert fixed_source.is_file(), "Missing corrected Data Library module"
+          content = fixed_source.read_text(encoding="utf-8")
+          assert "worker.finished.connect(self._download_thread_finished)" in content, "Fix missing"
+          assert "self.worker = None" in content, "Worker reset missing"
+
+          api = "https://api.github.com/repos/ApolloN1205/SelenEkto/releases/tags/V1.0"
+          headers = {"User-Agent": "SelenEkto-portable-release-repair",
+                     "Accept": "application/vnd.github+json"}
+          token = os.environ.get("GH_TOKEN", "")
+          if token:
+              headers["Authorization"] = "Bearer " + token
+          with urllib.request.urlopen(urllib.request.Request(api,headers=headers),timeout=40) as r:
+              release = json.load(r)
+          matching = [a for a in release["assets"] if a["name"] == "SelenEkto.zip"]
+          assert len(matching) == 1, "Release asset missing or ambiguous"
+          # Public release download; no executable installation on runner.
+          request = urllib.request.Request(matching[0]["browser_download_url"],
+                                           headers={"User-Agent":"SelenEkto-portable-release-repair"})
+          original = repo / "original_v1.zip"
+          with urllib.request.urlopen(request,timeout=120) as src, original.open("wb") as out:
+              shutil.copyfileobj(src,out,length=2*1024*1024)
+          assert original.stat().st_size == matching[0]["size"], "Incomplete original download"
+          print("Original release:",original.stat().st_size,"bytes")
+
+          # Replace inside ZIP without extracting untrusted paths or changing the binary.
+          destination = repo / "SelenEkto_V1_0_Repeat_Download_FIXED.zip"
+          with zipfile.ZipFile(original, "r") as input_zip:
+              members = input_zip.infolist()
+              for member in members:
+                  path = member.filename.replace("\\", "/")
+                  parts = Path(path).parts
+                  if path.startswith("/") or ".." in parts or (parts and ":" in parts[0]):
+                      raise RuntimeError("Unsafe release archive path: "+path)
+              target_suffix = "src/selenekto_v2/library_view.py"
+              matches = [member.filename for member in members if
+                         member.filename.replace("\\","/").endswith(target_suffix)]
+              assert len(matches)==1, "Expected exactly one Data Library module, found "+str(matches)
+              replace_name = matches[0]
+              with zipfile.ZipFile(destination, "w", allowZip64=True) as output_zip:
+                  for member in members:
+                      if member.filename == replace_name:
+                          output_zip.writestr(member, fixed_source.read_bytes())
+                      else:
+                          # Copy every other member as-is, preserving directory layout.
+                          with input_zip.open(member) as stream, output_zip.open(member, "w", force_zip64=True) as target:
+                              shutil.copyfileobj(stream,target,length=2*1024*1024)
+                  output_zip.writestr("REPEAT_DOWNLOAD_FIX_README.txt",
+                      "SELENEKTO FULL PORTABLE RELEASE - REPEAT DOWNLOAD HOTFIX\n"
+                      "This ZIP contains the original V1.0 executable and a repaired Data Library Python source file.\n"
+                      "The EXE itself has not been rebuilt. No original NASA data is included.\n\n"
+                      "1. Extract this whole ZIP into a NEW writable folder.\n"
+                      "2. Find SelenEkto.exe inside the extracted SelenEkto directory.\n"
+                      "3. Start the EXE and test two sequential region downloads.\n"
+                      "4. Keep the entire extracted folder together.\n"
+                      "Do not delete your existing working installation or large local NASA data.\n"
+                      "This hotfix has automated ZIP checks but still needs a GUI test on your PC.\n")
+          original.unlink()
+
+          with zipfile.ZipFile(destination) as completed:
+              names = completed.namelist()
+              assert replace_name in names
+              assert completed.read(replace_name) == fixed_source.read_bytes()
+              assert sum(n.endswith("_slope.png") and "/previews/" in n.replace("\\","/") for n in names) == 24
+              assert any(n.endswith("/SelenEkto.exe") or n=="SelenEkto.exe" for n in names)
+              python_archives = [n for n in names if n.replace("\\","/").endswith("_internal/base_library.zip")]
+              assert len(python_archives)==1
+              import io
+              with zipfile.ZipFile(io.BytesIO(completed.read(python_archives[0]))) as embedded:
+                  assert "encodings/__init__.pyc" in embedded.namelist() or "encodings/__init__.py" in embedded.namelist()
+              assert completed.testzip() is None, "ZIP integrity failed"
+          print("Finished ZIP:",destination.name,"size",destination.stat().st_size,
+                "SHA256",hashlib.file_digest(destination.open("rb"),"sha256").hexdigest())
+          '@ | Set-Content -Encoding UTF8 package_repaired_release.py
+          python package_repaired_release.py
+      - name: Upload ready-to-extract Windows application
+        uses: actions/upload-artifact@v4
+        with:
+          name: SelenEkto-Full-Windows-V1-0-Download-Fixed
+          path: SelenEkto_V1_0_Repeat_Download_FIXED.zip
+          retention-days: 7
+          if-no-files-found: error
