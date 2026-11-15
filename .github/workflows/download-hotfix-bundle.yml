@@ -1,0 +1,61 @@
+name: Build repeat-download hotfix bundle
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/download-hotfix-bundle.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/download-hotfix-bundle.yml'
+      - 'SelenEkto_Data_Infrastructure/src/selenekto_v2/library_view.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hotfix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate download lifecycle and package overlay
+        shell: bash
+        run: |
+          set -e
+          python -m pytest -q SelenEkto_Data_Infrastructure/tests/test_library_download_lifecycle.py
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import ast
+          source = Path('SelenEkto_Data_Infrastructure/src/selenekto_v2/library_view.py')
+          s = source.read_text(encoding='utf-8')
+          ast.parse(s)
+          if 'worker.finished.connect(self._download_thread_finished)' not in s:
+              raise SystemExit('Required lifecycle fix missing')
+          with ZipFile('SelenEkto_Repeat_Download_Hotfix.zip','w',ZIP_DEFLATED) as zip:
+              zip.write(source, 'src/selenekto_v2/library_view.py')
+              zip.writestr('HOTFIX_README.txt',
+                  'SelenEkto V1.0 repeat-download hotfix\n'
+                  'This is a source overlay for the existing portable Windows V1.0 build, not a new EXE.\n\n'
+                  '1. Close SelenEkto completely.\n'
+                  '2. Make a backup copy of your extracted SelenEkto folder.\n'
+                  '3. Extract this ZIP into the extracted SelenEkto application folder\n'
+                  '   (the folder containing SelenEkto.exe), preserving the src folder.\n'
+                  '4. Approve replacement of src/selenekto_v2/library_view.py.\n'
+                  '5. Start SelenEkto.exe and download two different regions in sequence.\n'
+                  'This fix does not require deleting existing terrain data.\n'
+                  'If the app fails, restore your backup.\n'
+                  'The exact V1.0 binary was not rebuilt or GUI-tested by this workflow.\n')
+          with ZipFile('SelenEkto_Repeat_Download_Hotfix.zip') as z:
+              assert 'src/selenekto_v2/library_view.py' in z.namelist()
+              assert z.testzip() is None
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SelenEkto-Repeat-Download-Hotfix
+          path: SelenEkto_Repeat_Download_Hotfix.zip
+          retention-days: 7
