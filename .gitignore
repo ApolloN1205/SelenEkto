@@ -1,42 +1,36 @@
-
-# Python
-.venv/
-__pycache__/
-.pytest_cache/
-*.pyc
-
-# Build outputs
-dist/
-build/
-release_ready/
-_archive/
-*.spec
-
-# SelenEkto generated data and backups
-**/data/raw/
-**/data/processed/logs/
-**/data/config/desktop_settings.json
-**/*_backup_*/
-**/*_backup.py
-
-# Local files
-.env
-*.part
-
-
-# SelenEkto generated files
-**/dist/
-**/build/
+# Python local environments and generated caches
 **/.venv/
-**/release_ready/
+**/venv/
 **/__pycache__/
 **/.pytest_cache/
+**/*.py[cod]
+**/*.egg-info/
+
+# Generated application builds and local packaging
+**/dist/
+**/build/
+**/release_ready/
 **/_archive/
+*.spec
 
-# Local data and temporary files
+# Raw NASA rasters, transient analysis, local settings and logs
 **/data/raw/
-**/data/processed/logs/
+**/data/cache/
+**/data/processed/
 **/data/config/desktop_settings.json
-*.part
-*.pyc
+**/data/catalog/region_profiles/local_raster_inventory.json
+**/data/catalog/named_candidates.before_*.json
 
+# Local-only backups, temporary downloads and secrets
+**/.local_backups/
+**/*_backup_*/
+**/*_backup.py
+**/*_before_*.py
+**/*_pre_*.py
+*.bak
+*.part
+*.tmp
+*.log
+.env
+.env.*
+!.env.example
