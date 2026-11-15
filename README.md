@@ -42,6 +42,16 @@ The source and tests are in [`SelenEkto_Data_Infrastructure/`](SelenEkto_Data_In
 
 Generated `dist/`, `build/`, `.venv/`, local NASA GeoTIFFs and private settings are intentionally not version-controlled. **GitHub Releases** host compiled Windows applications; **Tags** mark source-code versions.
 
+## Developer contribution and AI assistance
+
+SelenEkto began with the developers' own idea: make the complex problem of exploring lunar south-pole landing locations understandable through an interactive scientific application. Turning that idea into a working project required **the developers to make the decisions**: identifying the problem worth solving, setting the scope, researching the lunar environment, choosing sources, defining the user experience, specifying what each feature should do, and deciding how the data should be presented and checked.
+
+Much of the difficult work was *thinking before coding*. The team translated a real-world space-science challenge into concrete requirements: which terrain characteristics matter, how locations should be compared, how to distinguish measured data from estimates, how to handle unavailable information, and how to communicate uncertainty without overstating scientific accuracy. The developers supplied the detailed instructions, priorities, refinements and feedback that shaped each iteration. SelenEkto reflects their direction, judgement, persistence and problem-solving, rather than an AI system independently designing a mission-planning tool.
+
+**AI-use disclosure:** ChatGPT assisted with generating parts of the data/database infrastructure code, writing supporting automation and maintenance scripts, and organising Git/GitHub work such as repository cleanup and pull requests. These are implementation and workflow contributions, not a replacement for the team's ownership of the concept, requirements or decisions. This statement describes those ChatGPT-assisted tasks; it does not claim that every line of the project was manually written or independently scientifically validated.
+
+The result remains a **student-led research preview**, not an operational landing-safety system. The developers' aim was to turn demanding technical research and a large collection of datasets into a coherent tool people could explore and learn from.
+
 ## Credits and provenance
 
 NASA lunar terrain products and NASA/JPL Horizons underpin the research features. See the project's [data-source audit](SelenEkto_Data_Infrastructure/DATA_SOURCE_AUDIT.md) for provenance and limitations. SelenEkto is an independent educational development project, not an official NASA or JPL application.
