@@ -98,11 +98,26 @@ class LibraryPage(QWidget):
         if QMessageBox.question(self,'Download original NASA data',text)!=QMessageBox.StandardButton.Yes:return
         self.download.setEnabled(False);self.log.setPlainText(f'Downloading {region}…')
         self.worker=DownloadWorker(self.root,region)
-        self.worker.finished_report.connect(self.download_finished)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.worker.start()
+        worker = self.worker
+        worker.finished_report.connect(self.download_finished)
+        worker.finished.connect(self._download_thread_finished)
+        worker.finished.connect(worker.deleteLater)
+        try:
+            worker.start()
+        except Exception as exc:
+            self.worker = None
+            self.download.setEnabled(True)
+            self.log.setPlainText(f'Could not start the download: {exc}')
+            worker.deleteLater()
+
+    def _download_thread_finished(self):
+        # QThread.finished is emitted after run() exits. Forget the wrapper before
+        # deleteLater destroys its Qt object; the next download must get a fresh worker.
+        self.worker = None
+        self.download.setEnabled(True)
+
     def download_finished(self,report,complete):
-        self.download.setEnabled(True);self.log.setPlainText(report)
+        self.log.setPlainText(report)
         self.refresh()
         if callable(self.on_updated):self.on_updated()
         QMessageBox.information(self,'Download finished' if complete else 'Download incomplete',report)
