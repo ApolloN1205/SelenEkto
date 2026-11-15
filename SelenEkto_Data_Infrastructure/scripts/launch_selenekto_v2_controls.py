@@ -42,6 +42,7 @@ def load_profiles(folder):
             if p.get('site_code') not in EXCLUDED_RELEASE_REGIONS]
 
 from selenekto_v2.illumination_controls import calculate_candidate_timeline, calculate_candidate_horizon, explain_error
+from selenekto_v2.worker_logging import write_worker_exception
 from selenekto_v2.settings_store import (DEFAULTS, THEMES, ACCENTS, load_settings, save_settings, theme_stylesheet)
 
 BG='#080A0D';PANEL='#141820';BORDER='#303846';FG='#EEF1F5';MUTED='#A6B0C0';ACCENT='#E77F71'
@@ -95,10 +96,9 @@ class SolarWorker(QThread):
             result,path=calculate_candidate_timeline(self.root,self.record,self.start_utc,self.hours,self.interval)
             self.success.emit(result,str(path))
         except Exception as exc:
-            log=self.root/'data/processed/logs/last_candidate_solar_error.log'
-            log.parent.mkdir(parents=True,exist_ok=True)
-            log.write_text(traceback.format_exc(),encoding='utf-8')
-            self.failure.emit(explain_error(exc)+f"\n\nFull error log: {log}")
+            log=write_worker_exception(self.root,'last_candidate_solar_error.log',exc)
+            details=f"\n\nFull error log: {log}" if log else "\n\nDiagnostic log could not be saved."
+            self.failure.emit(explain_error(exc)+details)
 
 class HorizonWorker(QThread):
     success=Signal(object,object)
@@ -111,10 +111,9 @@ class HorizonWorker(QThread):
             result,path=calculate_candidate_horizon(self.root,self.record)
             self.success.emit(result,str(path))
         except Exception as exc:
-            log=self.root/'data/processed/logs/last_candidate_horizon_error.log'
-            log.parent.mkdir(parents=True,exist_ok=True)
-            log.write_text(traceback.format_exc(),encoding='utf-8')
-            self.failure.emit(explain_error(exc)+f"\n\nFull error log: {log}")
+            log=write_worker_exception(self.root,'last_candidate_horizon_error.log',exc)
+            details=f"\n\nFull error log: {log}" if log else "\n\nDiagnostic log could not be saved."
+            self.failure.emit(explain_error(exc)+details)
 
 class Main(QMainWindow):
     def __init__(self):
