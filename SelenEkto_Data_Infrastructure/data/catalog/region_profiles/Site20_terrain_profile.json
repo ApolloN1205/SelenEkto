@@ -11,23 +11,23 @@
     "height": 3200,
     "pixel_count": 10240000,
     "transform": [
-      5.0,
-      0.0,
-      65000.0,
-      0.0,
-      -5.0,
-      126000.0
+      5,
+      0,
+      65000,
+      0,
+      -5,
+      126000
     ],
     "crs_wkt": "PROJCS[\"unnamed\",GEOGCS[\"unnamed ellipse\",DATUM[\"unknown\",SPHEROID[\"unnamed\",1737400,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]",
     "bounds": [
-      65000.0,
-      110000.0,
-      81000.0,
-      126000.0
+      65000,
+      110000,
+      81000,
+      126000
     ],
     "resolution_xy_m": [
-      5.0,
-      5.0
+      5,
+      5
     ],
     "all_five_layers_match": false
   },
@@ -40,7 +40,7 @@
         "total_pixels": 10240000,
         "valid_pixels": 10240000,
         "missing_or_masked_pixels": 0,
-        "valid_coverage_percent": 100.0,
+        "valid_coverage_percent": 100,
         "minimum": 2796.344970703125,
         "maximum": 6463.86376953125,
         "mean": 5595.00603042984,
@@ -60,8 +60,8 @@
         "total_pixels": 10240000,
         "valid_pixels": 10240000,
         "missing_or_masked_pixels": 0,
-        "valid_coverage_percent": 100.0,
-        "minimum": 0.0,
+        "valid_coverage_percent": 100,
+        "minimum": 0,
         "maximum": 66.13795471191406,
         "mean": 12.813874928702711,
         "standard_deviation_population": 6.648660966793521,
@@ -92,15 +92,15 @@
         "total_pixels": 10240000,
         "valid_pixels": 10240000,
         "missing_or_masked_pixels": 0,
-        "valid_coverage_percent": 100.0,
-        "minimum": 0.0,
-        "maximum": 4.0,
+        "valid_coverage_percent": 100,
+        "minimum": 0,
+        "maximum": 4,
         "mean": 0.072879296875,
         "standard_deviation_population": 0.2701286128162021,
         "statistic_status": "valid",
-        "median": 0.0,
-        "percentile_02": 0.0,
-        "percentile_98": 1.0,
+        "median": 0,
+        "percentile_02": 0,
+        "percentile_98": 1,
         "quantile_method": "approximate: 512x512 nearest-neighbour overview sample (not exact full-raster quantiles)",
         "spot_count_distribution": [
           {
@@ -144,19 +144,19 @@
       "median": 5760.482421875,
       "standard_deviation": 648.1683466822607,
       "valid_pixels": 10240000,
-      "valid_coverage_percent": 100.0,
+      "valid_coverage_percent": 100,
       "median_is_approximate": true
     },
     "slope": {
       "status": "ready",
       "units": "degrees",
-      "minimum": 0.0,
+      "minimum": 0,
       "maximum": 66.13795471191406,
       "mean": 12.813874928702711,
       "median": 11.626778602600098,
       "standard_deviation": 6.648660966793521,
       "valid_pixels": 10240000,
-      "valid_coverage_percent": 100.0,
+      "valid_coverage_percent": 100,
       "median_is_approximate": true
     },
     "elevation_uncertainty": {
@@ -186,13 +186,13 @@
     "measurement_count": {
       "status": "ready",
       "units": "LOLA spots / pixel",
-      "minimum": 0.0,
-      "maximum": 4.0,
+      "minimum": 0,
+      "maximum": 4,
       "mean": 0.072879296875,
-      "median": 0.0,
+      "median": 0,
       "standard_deviation": 0.2701286128162021,
       "valid_pixels": 10240000,
-      "valid_coverage_percent": 100.0,
+      "valid_coverage_percent": 100,
       "median_is_approximate": true,
       "pixels_with_at_least_one_spot_percent": 7.024345703125,
       "spot_count_distribution": [
@@ -227,17 +227,17 @@
   "dataset_provenance": [
     {
       "layer": "elevation",
-      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\Site20\\Site20_final_adj_5mpp_surf.tif",
+      "path": "data/raw/lola/Site20/Site20_final_adj_5mpp_surf.tif",
       "file_size_bytes": 40980802
     },
     {
       "layer": "slope",
-      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\Site20\\Site20_final_adj_5mpp_slp.tif",
+      "path": "data/raw/lola/Site20/Site20_final_adj_5mpp_slp.tif",
       "file_size_bytes": 40980772
     },
     {
       "layer": "measurement_count",
-      "path": "C:\\Users\\Norbert\\OneDrive\\Documents\\GitHub\\SelenEkto\\SelenEkto_Data_Infrastructure\\data\\raw\\lola\\Site20\\Site20_final_adj_5mpp_ldec.tif",
+      "path": "data/raw/lola/Site20/Site20_final_adj_5mpp_ldec.tif",
       "file_size_bytes": 40980740
     }
   ],
