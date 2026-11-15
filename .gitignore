@@ -23,3 +23,20 @@ _archive/
 .env
 *.part
 
+
+# SelenEkto generated files
+**/dist/
+**/build/
+**/.venv/
+**/release_ready/
+**/__pycache__/
+**/.pytest_cache/
+**/_archive/
+
+# Local data and temporary files
+**/data/raw/
+**/data/processed/logs/
+**/data/config/desktop_settings.json
+*.part
+*.pyc
+
