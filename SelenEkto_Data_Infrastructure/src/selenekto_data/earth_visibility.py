@@ -19,6 +19,49 @@ GEOMETRIC_ONLY_WARNING = (
 )
 
 
+def south_polar_stereographic_grid_north_offset_deg(
+    longitude_east_deg: float,
+    central_meridian_east_deg: float = 0.0,
+) -> float:
+    """Return geographic north's clockwise bearing from projected +Y.
+
+    For the standard south-polar stereographic orientation used by the
+    Site01 DEM (latitude of origin -90 degrees), meridians converge at the
+    pole and the local geographic-north direction has grid bearing
+    (longitude - central meridian) modulo 360 degrees.
+
+    Both longitudes must use the same east-positive lunar longitude frame as
+    the projection. This computes projection convergence only; it does not
+    transform between lunar reference frames or validate the source longitude.
+    """
+    longitude = float(longitude_east_deg)
+    central_meridian = float(central_meridian_east_deg)
+    if not (math.isfinite(longitude) and math.isfinite(central_meridian)):
+        raise ValueError("Longitudes must be finite")
+    if not -180.0 <= longitude <= 180.0:
+        raise ValueError("longitude_east_deg must be between -180 and 180")
+    if not -180.0 <= central_meridian <= 180.0:
+        raise ValueError("central_meridian_east_deg must be between -180 and 180")
+    return (longitude - central_meridian) % 360.0
+
+
+SITE01_LONGITUDE_AS_PUBLISHED_DEG = -137.49
+SITE01_CENTRAL_MERIDIAN_DEG = 0.0
+
+
+def site01_grid_north_offset_deg() -> float:
+    """Return the provisional Site01 grid-north offset (222.51 degrees).
+
+    The published signed longitude is preserved as an east-positive signed
+    longitude for this projection calculation. Confirm that its lunar frame
+    is compatible with the DEM and Horizons before scientific use.
+    """
+    return south_polar_stereographic_grid_north_offset_deg(
+        SITE01_LONGITUDE_AS_PUBLISHED_DEG,
+        SITE01_CENTRAL_MERIDIAN_DEG,
+    )
+
+
 def earth_disk_fraction_above_horizon(
     centre_clearance_deg: float,
     angular_radius_deg: float = EARTH_ANGULAR_RADIUS_DEG,
