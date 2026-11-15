@@ -74,8 +74,8 @@ def calculate_candidate_timeline(root:Path, candidate:dict, start:datetime, hour
         errors=ds.read(1,masked=True).filled(np.nan).astype(float)
     angles=calculate_horizon(dem,transform,float(x),float(y),max_distance_m=scan_m,
                              sample_step_m=10,azimuth_step_deg=1,counts=counts,errors=errors)
-    if len(angles)!=360 or any(a.get('horizon_angle_deg') is None for a in angles):
-        raise ValueError('Candidate horizon is incomplete, possibly because the DEM ends near this location. Choose another point or a smaller scan radius.')
+    if len(angles)!=360 or any(a.get('horizon_angle_deg') is None or a.get('boundary_truncated') for a in angles):
+        raise ValueError('Candidate horizon is incomplete: a direction has missing elevation or the DEM ends before the requested scan radius. Choose a point farther from the raster edge or use a smaller scan radius.')
     latitude,longitude=candidate_geography(wkt,float(x),float(y))
     positions,source=fetch_candidate_sun(latitude,longitude,elevation,start,hours,interval_min)
     north_offset=project_north_offset(wkt,latitude,longitude)
@@ -137,8 +137,8 @@ def calculate_candidate_horizon(root: Path, candidate: dict, scan_m=500):
         errors=ds.read(1,masked=True).filled(np.nan).astype(float)
     records=calculate_horizon(dem, transform, float(x), float(y), max_distance_m=scan_m,
                               sample_step_m=10,azimuth_step_deg=1,counts=counts,errors=errors)
-    if len(records)!=360 or any(r['horizon_angle_deg'] is None for r in records):
-        raise ValueError('Incomplete horizon (DEM edge or NoData). Try a different candidate.')
+    if len(records)!=360 or any(r.get('horizon_angle_deg') is None or r.get('boundary_truncated') for r in records):
+        raise ValueError('Incomplete horizon: the DEM ends before the requested scan radius or has no valid elevation in a direction. Try another candidate or a smaller scan radius.')
     result={'analysis_type':'candidate_horizon',
             'candidate':{'name':candidate['name'],'region':region,'row':row,'col':col,'elevation_m':elevation},
             'settings':{'scan_radius_m':scan_m,'azimuth_reference':'clockwise from projected grid +Y'},
