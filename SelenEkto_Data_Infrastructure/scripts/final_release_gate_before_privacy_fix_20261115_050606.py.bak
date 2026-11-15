@@ -1,0 +1,379 @@
+#!/usr/bin/env python3
+"""SelenEkto: conservative Windows release preparation, auditing and ZIP publication.
+
+prepare: run tests, check source data, regenerate previews, build, and make a detached stage.
+audit:   verify current stage without modifying anything.
+publish: create a ZIP only when the user has verified launch + selective download.
+
+Only Python standard library is used in this file. Does not delete development data.
+"""
+from __future__ import annotations
+
+import argparse
+import ast
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import zipfile
+from datetime import datetime, timezone
+from pathlib import Path
+
+EXCLUDED = {'LM8', 'Site20', 'Site23'}
+CANONICAL_REGIONS = ('Site01','Site04','Site06','Site07','Site11','Site20','Site20v2',
+                     'Site23','Site42','Haworth','Shoemaker','DM1','DM2','SL2','SL3',
+                     'NPA','NPB','NPC','NPD','LM1','LM2','LM3','LM4','LM5','LM6','LM7','LM8')
+SUPPORTED = tuple(x for x in CANONICAL_REGIONS if x not in EXCLUDED)
+RUNTIME_SCRIPTS = {'launch_selenekto_v2_controls.py', 'download_pgda_real.py'}
+TEMP_FILE_SUFFIXES = ('.bak', '.tmp', '.part', '.log', '.pyc', '.pyo', '.orig', '.swp')
+PERSONAL_PATH = re.compile(r'(?:[a-zA-Z]:[\\/]+Users[\\/]+[^\\/\s"\']+|/Users/[^/\s]+|/home/[^/\s]+)', re.I)
+TEXT_EXTS = {'.py', '.json', '.txt', '.md', '.toml', '.yaml', '.yml', '.cfg', '.ini', '.csv'}
+
+
+def stamp() -> str:
+    return datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+
+
+def is_link(path: Path) -> bool:
+    try:
+        return path.is_symlink() or (hasattr(os.path, 'isjunction') and os.path.isjunction(path))
+    except OSError:
+        return True
+
+
+def guarded_run(args: list[str], cwd: Path) -> None:
+    print('\n> ' + ' '.join(args), flush=True)
+    subprocess.run(args, cwd=str(cwd), check=True)
+
+
+def parent_root(script: Path) -> Path:
+    root = script.resolve().parents[1]
+    if not (root/'src'/'selenekto_v2').is_dir() or not (root/'scripts').is_dir():
+        raise RuntimeError('Run this file inside SelenEkto_Data_Infrastructure/scripts. Project source not found.')
+    return root
+
+
+def ignore_from_dist(folder: str, children: list[str]) -> set[str]:
+    """Do not include local data junctions, generated state, backups or development utilities."""
+    here = Path(folder)
+    banned = set()
+    for name in children:
+        child = here/name
+        low = name.casefold()
+        if is_link(child):
+            banned.add(name); continue
+        if low in {'.git', '.venv', 'venv', '__pycache__', '.pytest_cache', '_archive', 'tests', 'build'}:
+            banned.add(name); continue
+        if low.endswith(TEMP_FILE_SUFFIXES) or low.startswith('selenekto_backup_'):
+            banned.add(name); continue
+        if low.endswith(('.tif','.tiff','.tif.part','.tiff.part')):
+            banned.add(name); continue
+        # A distributable must not contain generated user results or configuration.
+        if here.name == 'data' and low in {'processed', 'config', 'raw'}:
+            banned.add(name); continue
+        if here.name == 'scripts' and name not in RUNTIME_SCRIPTS:
+            banned.add(name); continue
+        if here.name == 'region_profiles' and any(name.casefold().startswith((r+'_').casefold()) or name.casefold() == (r+'.json').casefold() for r in EXCLUDED):
+            banned.add(name); continue
+        if here.name == 'previews' and any(name.casefold().startswith((r+'_').casefold()) for r in EXCLUDED):
+            banned.add(name); continue
+        if here.name == 'region_profiles' and low.endswith(('.csv','.tsv')):
+            # Aggregate files may still list excluded regions; application uses per-site JSON.
+            banned.add(name); continue
+        if name == 'named_candidates.json' or name == 'desktop_settings.json':
+            banned.add(name); continue
+    return banned
+
+
+def copy_portable(source: Path, destination: Path) -> None:
+    if not source.is_dir() or not (source/'SelenEkto.exe').is_file():
+        raise RuntimeError('Existing dist/SelenEkto does not contain SelenEkto.exe')
+    if destination.exists():
+        raise FileExistsError(f'Staging destination exists; refusing overwrite: {destination}')
+    shutil.copytree(source, destination, ignore=ignore_from_dist, symlinks=False)
+    (destination/'data'/'raw'/'lola').mkdir(parents=True, exist_ok=True)
+    (destination/'data'/'config').mkdir(parents=True, exist_ok=True)
+    (destination/'data'/'processed'/'logs').mkdir(parents=True, exist_ok=True)
+    # Existing manifest contains source_folder with the developer's private home path.
+    manifest_path = destination/'release_manifest.json'
+    try:
+        old = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.is_file() else {}
+    except ValueError:
+        old = {}
+    old.pop('source_folder', None)
+    old.pop('source_root', None)
+    old.pop('project_root', None)
+    manifest = {
+        'app': 'SelenEkto', 'release_type': 'research-preview',
+        'distribution': 'portable-windows-onedir',
+        'data_mode': 'offline slope previews + optional per-region NASA downloads',
+        'excluded_regions': sorted(EXCLUDED),
+        'supported_regions': list(SUPPORTED),
+        'raster_data_included': False,
+        'scientific_validation': 'Not independently certified; not for real landing decisions.',
+        'data_source': 'NASA Planetary Geodynamics Data Archive / LOLA',
+        'generated_utc': datetime.now(timezone.utc).isoformat(),
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf-8')
+    (destination/'README_START_HERE.txt').write_text(
+        'SELENEKTO — WINDOWS RESEARCH PREVIEW\n\n'
+        'Open SelenEkto.exe in this folder; keep the _internal folder beside it.\n'
+        'No separate Python installation should be necessary.\n'
+        'The Data Library provides locally cached SLOPE previews where available.\n'
+        'To analyse a new point, download that region\'s NASA terrain layers in Data Library.\n'
+        'Large full-resolution rasters are not bundled. Downloads require internet access.\n'
+        'Known excluded regions: LM8, Site20, Site23.\n'
+        'This is a research/education preview, not a validated lunar landing safety tool.\n'
+        'If startup fails, examine %LOCALAPPDATA%\\SelenEkto\\logs\\startup_error.log.\n'
+        'Store this portable folder in a user-writable location (e.g. Documents).\n',
+        encoding='utf-8')
+
+
+def walk_no_follow(root: Path):
+    for base, dirs, names in os.walk(root, topdown=True, followlinks=False):
+        p = Path(base)
+        for directory in list(dirs):
+            path = p / directory
+            if is_link(path):
+                yield path, 'link'
+                dirs.remove(directory)
+        for name in names:
+            path = p / name
+            yield path, 'link' if is_link(path) else 'file'
+
+
+def audit(stage: Path) -> dict:
+    stage=Path(stage)
+    errors=[]; warnings=[]; size=0; files=0; previews=0
+    required = ['SelenEkto.exe', 'scripts/launch_selenekto_v2_controls.py',
+                'scripts/download_pgda_real.py', 'src/selenekto_v2/library_view.py',
+                'src/selenekto_v2/offline_library.py', 'src/selenekto_v2/settings_store.py',
+                'release_manifest.json', 'README_START_HERE.txt']
+    for rel in required:
+        if not (stage/rel).is_file(): errors.append('Missing required runtime file: '+rel)
+    exe=stage/'SelenEkto.exe'
+    if exe.is_file():
+        with exe.open('rb') as stream:
+            if stream.read(2)!=b'MZ': errors.append('SelenEkto.exe is not a Windows PE executable')
+    if not (stage/'_internal').is_dir():
+        errors.append('PyInstaller _internal directory not present beside executable')
+    for path,kind in walk_no_follow(stage):
+        rel=path.relative_to(stage)
+        parts={x.lower() for x in rel.parts}
+        if kind=='link':
+            errors.append(f'Unsafe symlink/junction in distributable: {rel}'); continue
+        files += 1
+        n=path.name.casefold()
+        if n.endswith(('.tif','.tiff','.part')):
+            errors.append(f'NASA raster/incomplete download bundled: {rel}')
+        if n in {'named_candidates.json', 'desktop_settings.json'}:
+            errors.append(f'Personal user data/config bundled: {rel}')
+        if n.endswith(TEMP_FILE_SUFFIXES) or any(x in parts for x in {'.git','.venv','__pycache__','_archive'}):
+            errors.append(f'Backup/cache/development file bundled: {rel}')
+        if len(rel.parts)>=3 and rel.parts[:2]==('data','catalog') and any(n.startswith((x+'_').casefold()) for x in EXCLUDED):
+            errors.append(f'Excluded region data bundled: {rel}')
+        if rel.parts[:2]==('data','catalog') and n=='regions_comparable.csv':
+            errors.append(f'Potentially stale aggregate profile bundled: {rel}')
+        if rel.parts[:3]==('data','catalog','previews') and n.endswith('_slope.png'):
+            previews += 1
+            with path.open('rb') as stream:
+                if stream.read(8)!=b'\x89PNG\r\n\x1a\n':
+                    errors.append(f'Preview is not a PNG: {rel}')
+        try:
+            size += path.stat().st_size
+        except OSError:
+            errors.append(f'Cannot stat release file: {rel}')
+        if path.suffix.lower() in TEXT_EXTS and path.stat().st_size<=2_000_000:
+            try:
+                content=path.read_text(encoding='utf-8',errors='replace')
+                if PERSONAL_PATH.search(content):
+                    errors.append(f'Possible developer personal directory disclosed in: {rel}')
+            except OSError as exc:
+                errors.append(f'Cannot scan text: {rel}: {exc}')
+    if not previews:
+        errors.append('No offline slope previews included')
+    if previews < len(SUPPORTED):
+        warnings.append(f'Only {previews}/{len(SUPPORTED)} included regions have slope previews; users will see a missing-preview notice elsewhere')
+    lib=stage/'src/selenekto_v2/library_view.py'
+    if lib.is_file() and 'REGIONS = tuple(' not in lib.read_text(encoding='utf-8',errors='replace'):
+        errors.append('Data Library lacks final excluded-region filter')
+    launcher=stage/'scripts/launch_selenekto_v2_controls.py'
+    if launcher.is_file():
+        source=launcher.read_text(encoding='utf-8',errors='replace')
+        if 'EXCLUDED_RELEASE_REGIONS' not in source:
+            errors.append('Launcher lacks final excluded-region filter')
+        if 'side.addWidget(img)' in source:
+            errors.append('Sidebar logo appears to remain enabled')
+    settings=stage/'src/selenekto_v2/settings_store.py'
+    if settings.is_file():
+        source=settings.read_text(encoding='utf-8',errors='replace')
+        if '#06070A' not in source:
+            errors.append('Near-black Obsidian palette not found')
+        if "'default_layer': 'Slope'" not in source:
+            errors.append('Slope is not the default layer in Settings')
+    manifest=stage/'release_manifest.json'
+    if manifest.is_file():
+        try:
+            metadata=json.loads(manifest.read_text(encoding='utf-8'))
+            if metadata.get('source_folder') or metadata.get('project_root'):
+                errors.append('Manifest discloses developer project path')
+        except ValueError:
+            errors.append('Invalid JSON release manifest')
+    return {'passed_static_checks':not errors, 'errors':errors, 'warnings':warnings,
+            'slope_preview_count':previews, 'files':files,
+            'size_mb':round(size/1048576,2),
+            'caveat':'Passing static checks does not verify executable launch, downloader, or independent scientific accuracy.'}
+
+
+def write_result(stage:Path, result:dict):
+    report=stage.parent/'release_gate_audit.json'
+    report.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+    print(json.dumps(result,indent=2))
+    print('Audit report:',report)
+    if not result['passed_static_checks']:
+        raise RuntimeError('Release audit failed; DO NOT publish a ZIP.')
+
+
+def resolve_stage(root: Path) -> Path:
+    pointer=root/'release_ready'/'latest_stage.txt'
+    if not pointer.is_file():
+        raise FileNotFoundError('No prepared stage found. Run: python scripts/final_release_gate.py prepare')
+    dest=Path(pointer.read_text(encoding='utf-8').strip()).resolve()
+    if root.resolve() not in dest.parents or dest.name!='SelenEkto':
+        raise RuntimeError('Saved stage path is unexpected; refusing publication.')
+    return dest
+
+
+def harden_builder(root: Path) -> None:
+    """Protect manifest privacy and include downloader's dynamic stdlib imports."""
+    path=root/'scripts'/'build_windows_release.py'
+    if not path.is_file():
+        raise FileNotFoundError(f'Missing builder: {path}')
+    before=path.read_text(encoding='utf-8')
+    after=re.sub(r"[\'\"]source_folder[\'\"]\s*:\s*str\(root\)\s*,?", "", before)
+    # download_pgda_real.py is loaded through importlib at runtime, so PyInstaller
+    # cannot infer its imports by static analysis of release/selenekto_entry.py.
+    if "'--hidden-import', 'urllib.request'" not in after:
+        anchor="'--hidden-import', 'requests'"
+        if after.count(anchor)!=1:
+            raise RuntimeError('Unknown build-script import layout; refusing to edit. Please check downloader imports.')
+        after=after.replace(anchor,"'--hidden-import', 'urllib.request', '--hidden-import', 'urllib.error', "
+                                   "'--hidden-import', 'ssl', "+anchor,1)
+    if after!=before:
+        ast.parse(after,filename=str(path))
+        backup=path.with_name(path.stem+'_before_final_gate_'+stamp()+'.py.bak')
+        backup.write_text(before,encoding='utf-8')
+        path.write_text(after,encoding='utf-8')
+        print('Build hardening applied; original builder backed up:',backup)
+    else:
+        print('Builder already has privacy and downloader bundling hardening.')
+
+
+def check_science_report(root: Path) -> None:
+    report=root/'data'/'processed'/'release'/'raster_alignment_screen.json'
+    if not report.is_file():
+        raise RuntimeError('Missing raster-alignment report; run prepare first.')
+    data=json.loads(report.read_text(encoding='utf-8'))
+    invalid=[item['region'] for item in data.get('results',[]) if item['status']=='invalid_or_misaligned']
+    if invalid:
+        raise RuntimeError('Unresolved raster-grid failures in INCLUDED regions: '+', '.join(invalid))
+    incomplete=[item['region'] for item in data.get('results',[]) if item['status']=='incomplete']
+    if incomplete:
+        print('WARNING: Some included regions lack original full-resolution layers:',', '.join(incomplete))
+    print('Science check scope: raster alignment only. Solar/horizon geodesy still require independent validation.')
+
+
+def prepare(root: Path, *, skip_build: bool=False):
+    if os.name!='nt' and not skip_build:
+        raise RuntimeError('Windows executable builds must run on Windows.')
+    python=sys.executable
+    guarded_run([python,'-m','compileall','-q','src','scripts'],root)
+    guarded_run([python,'-m','pytest','tests','-q'],root)
+    preview=root/'scripts'/'generate_offline_previews.py'
+    if preview.is_file():
+        guarded_run([python,str(preview)],root)
+    science=root/'scripts'/'validate_raster_alignment.py'
+    if science.is_file():
+        guarded_run([python,str(science)],root)
+    if not skip_build:
+        harden_builder(root)
+        current=root/'dist'/'SelenEkto'
+        if current.exists():
+            old=root/'dist'/f'SelenEkto_before_final_{stamp()}'
+            if old.exists(): raise FileExistsError(f'Backup collision: {old}')
+            current.rename(old)
+            print('Old local release preserved:',old)
+        guarded_run([python,str(root/'scripts'/'build_windows_release.py')],root)
+    current=root/'dist'/'SelenEkto'
+    stage=root/'release_ready'/f'staging_{stamp()}'/'SelenEkto'
+    copy_portable(current,stage)
+    result=audit(stage)
+    write_result(stage,result)
+    (root/'release_ready'/'latest_stage.txt').write_text(str(stage)+'\n',encoding='utf-8')
+    print('\nSTAGED CLEAN APPLICATION:',stage)
+    print('Launch this path directly and verify the GUI + one on-demand region download.')
+    print('It is NOT connected to your original NASA GeoTIFF folder.')
+    print('AFTER TESTING: python scripts/final_release_gate.py publish --confirm-smoke --confirm-downloader')
+
+
+def zip_release(stage:Path, zip_path:Path) -> tuple[str,int]:
+    if zip_path.exists():raise FileExistsError(f'Release ZIP exists: {zip_path}')
+    with zipfile.ZipFile(zip_path,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6,allowZip64=True) as bundle:
+        for path,kind in walk_no_follow(stage):
+            if kind!='file':raise RuntimeError(f'Release includes unsafe link: {path}')
+            rel=Path('SelenEkto')/path.relative_to(stage)
+            bundle.write(path,rel.as_posix())
+    with zipfile.ZipFile(zip_path) as bundle:
+        invalid=bundle.testzip()
+        if invalid:raise RuntimeError(f'ZIP integrity failed: {invalid}')
+        members=bundle.namelist()
+        if not any(p=='SelenEkto/SelenEkto.exe' for p in members):
+            raise RuntimeError('ZIP missing executable')
+        if any(p.lower().endswith(('.tif','.tiff')) for p in members):
+            raise RuntimeError('ZIP accidentally includes TIFF rasters')
+    digest=hashlib.sha256()
+    with zip_path.open('rb') as f:
+        for block in iter(lambda:f.read(4*1024*1024),b''):
+            digest.update(block)
+    return digest.hexdigest(),zip_path.stat().st_size
+
+
+def publish(root:Path, *, confirm_smoke:bool, confirm_downloader:bool):
+    if not (confirm_smoke and confirm_downloader):
+        raise RuntimeError('Publication blocked. First launch staged EXE independently, verify slope previews and download one region via the GUI; then pass --confirm-smoke --confirm-downloader.')
+    check_science_report(root)
+    stage=resolve_stage(root)
+    result=audit(stage)
+    write_result(stage,result)
+    out=root/'release_ready'/f'SelenEkto_Windows_Research_Preview_{stamp()}.zip'
+    digest,size=zip_release(stage,out)
+    (out.with_suffix('.zip.sha256')).write_text(f'{digest}  {out.name}\n',encoding='utf-8')
+    print('\nRESEARCH PREVIEW ZIP READY:',out)
+    print('Compressed size: {:.2f} MiB'.format(size/1048576))
+    print('SHA256:',digest)
+    print('Publish as a research preview, not a scientifically validated lunar landing recommendation system.')
+
+
+def main():
+    ap=argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('action',choices=('prepare','audit','publish'))
+    ap.add_argument('--root',type=Path)
+    ap.add_argument('--skip-build',action='store_true',help='Use an existing Windows dist/SelenEkto. Testing only; source code may be stale.')
+    ap.add_argument('--confirm-smoke',action='store_true',help='I launched the staged exe and checked UI, preview, settings, and missing-data messages')
+    ap.add_argument('--confirm-downloader',action='store_true',help='I tested a selective NASA region download through the staged GUI')
+    args=ap.parse_args()
+    root=args.root.resolve() if args.root else parent_root(Path(__file__))
+    try:
+        if args.action=='prepare':prepare(root,skip_build=args.skip_build)
+        elif args.action=='audit':
+            stage=resolve_stage(root);write_result(stage,audit(stage))
+        else:publish(root,confirm_smoke=args.confirm_smoke,confirm_downloader=args.confirm_downloader)
+    except (OSError, ValueError, RuntimeError,subprocess.CalledProcessError) as exc:
+        print('\nBLOCKED:',exc,file=sys.stderr)
+        raise SystemExit(2)
+
+if __name__=='__main__':main()

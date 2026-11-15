@@ -8,7 +8,7 @@ DEFAULTS = {
     'theme': 'Obsidian',
     'accent': 'Neon yellow',
     'font_size': 12,
-    'default_layer': 'Elevation',
+    'default_layer': 'Slope',
     'solar_duration_hours': 72,
     'solar_interval_minutes': 60,
     'confirm_candidate_removal': True,
@@ -57,5 +57,22 @@ def theme_stylesheet(base_style, settings):
     if s['theme'] == 'Graphite':
         for old,new in [('#080A0D','#1A1D23'),('#141820','#272C35'),('#303846','#485362'),('#10151C','#222833'),('#111820','#252B36')]:
             style=style.replace(old,new)
+    # SELENEKTO_FINAL_CONSOLIDATION_V1: deep Obsidian palette, preserving accent colours and Graphite.
+    if s['theme'] == 'Obsidian':
+        style += """
+        QMainWindow, QWidget { background-color: #06070A; color: #F1F2F5; }
+        QFrame#sidebar, QGroupBox, QTableWidget, QListWidget, QTextEdit, QScrollArea {
+            background-color: #0D1016; border: 1px solid #252B35;
+        }
+        QPushButton { background-color: #161B24; color: #F1F2F5; border: 1px solid #343E4B; }
+        QPushButton:hover { background-color: #222A36; }
+        QComboBox, QLineEdit, QSpinBox, QDateEdit, QDateTimeEdit {
+            background-color: #0C1016; color: #F1F2F5; border: 1px solid #384251;
+        }
+        QComboBox QAbstractItemView { background-color: #10141D; color: #F1F2F5; }
+        QHeaderView::section { background-color: #151A23; color: #F1F2F5; }
+        QTableWidget { alternate-background-color: #121722; }
+        QListWidget::item:selected { background-color: #222B3A; color: white; }
+        """
     style += f'''\nQMainWindow,QWidget {{font-size:{s['font_size']}px;}}\nQPushButton:focus,QComboBox:focus,QLineEdit:focus,QSpinBox:focus,QDateTimeEdit:focus {{border:1px solid {accent};}}\nQListWidget::item:selected {{border-left:3px solid {accent};}}\nQCheckBox::indicator:checked {{background:{accent};border:1px solid {accent};}}\n'''
     return style

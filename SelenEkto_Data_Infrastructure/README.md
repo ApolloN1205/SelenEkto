@@ -1,36 +1,31 @@
-# SelenEkto — Explainable Candidate Comparison
+# SelenEkto — release profile privacy repair
 
-This patch adds a working **Adjust comparison priorities** button to the existing PySide6 **Compare** tab. It patches the current installed launcher *in place*, makes a dated backup, and preserves your existing Settings, Aurora LOLA/Crimson colours, logo, and solar calculation fixes. It does not alter saved candidates, NASA data or prior scientific results.
+The static audit identified absolute Windows user paths in 24 terrain-profile JSON files and in `local_raster_inventory.json`. The staged directory is otherwise 304.9 MiB and has 24 slope previews.
 
-## What it does
+This patch fixes the **already-created staging directory** rather than rebuilding the executable. It converts private absolute paths inside terrain profiles to portable `data/...` references when they have an unambiguous recognized anchor. The local raster inventory is excluded from the *staged copy only*. It does **not** alter the source profiles, your original NASA rasters or the calculations. Originals from the modified staged files are backed up under `release_ready/privacy_backups_.../`, **outside** the distributable folder.
 
-Select two or more saved candidates (Ctrl+click) in Compare, then select **Adjust comparison priorities**. The window offers weights 0–10 for:
-- Gentler slope (low is preferred)
-- Lower elevation RMS uncertainty (low is preferred)
-- Lower slope RMS uncertainty (low is preferred)
-- More directly observed LOLA spots at the selected pixel (high is preferred)
+If a private path can't be safely converted, it refuses to proceed; it will not silently alter a scientific field or manufacture a path. The existing full release audit runs again and must pass before `latest_stage.txt` is created. A small hook is installed so future `prepare` builds apply the same privacy correction before their audit.
 
-By default, it **does not declare a winner**. An optional checkbox highlights the highest *relative preference score* among the selected candidates. The score is normalized only over those candidates; it is not a probability of safety or landing suitability. If any weighted measurement is missing, that candidate is **unscored** with an explicit reason. A criterion with weight zero is ignored. Identical metric values contribute equally to the compared candidates. No values are fabricated. This version deliberately does not include solar exposure in the preference index because validated independent candidate-solar results are not universally available yet.
+## Install and repair
 
-## Install in the existing infrastructure directory (PowerShell)
+Extract `SelenEkto_Release_Privacy_Fix.zip` into `SelenEkto_Data_Infrastructure` (ZIP root contains `scripts/` and `tests/`).
 
-1. Download the ZIP and select it from a Windows file picker (see chat response).
-2. Verify the new files exist:
-   `Test-Path .\scripts\patch_selenekto_recommendations.py`
-   `Test-Path .\src\selenekto_v2\recommendations.py`
-3. Apply once (makes a timestamped backup of your active launcher):
-   `.\.venv\Scripts\python.exe .\scripts\patch_selenekto_recommendations.py`
-4. Run the six focused tests:
-   `.\.venv\Scripts\python.exe -m pytest tests\test_recommendations.py -q`
-5. Run the full tests:
-   `.\.venv\Scripts\python.exe -m pytest tests -q`
-6. Open the main app:
-   `.\.venv\Scripts\python.exe .\scripts\launch_selenekto_v2_controls.py`
+```powershell
+.\.venv\Scripts\python.exe .\scripts\fix_release_profile_privacy.py
+```
 
-## Data prerequisites
+Then:
 
-To compare actual terrain measurements, your region's five source NASA rasters must be present and complete. After the existing download finishes, use the previously installed bulk downloader's verification command (check `--help` for available flags), regenerate real region profiles and refresh saved pixel data in Compare. Run this upgrade whether or not all regions have finished downloading: incomplete candidates will simply have clearly marked missing scores.
+```powershell
+.\.venv\Scripts\python.exe .\scripts\final_release_gate.py audit
+$stage = (Get-Content .\release_ready\latest_stage.txt -Raw).Trim()
+Start-Process -FilePath (Join-Path $stage 'SelenEkto.exe')
+```
 
-## Scope and quality
+Check the staged application, without a local data junction: launch without Python, 24 offline slope previews, warnings when raw rasters are missing, clear statuses, excluded regions, and a successful single-region NASA download using the app itself. Only after these real checks:
 
-Six unit tests run successfully in the build environment. The patcher was tested on the known Settings-launcher version, including idempotent second-run behaviour. The complete, user-modified Windows app still needs local validation. This is not a full scientific validation or final executable.
+```powershell
+.\.venv\Scripts\python.exe .\scripts\final_release_gate.py publish --confirm-smoke --confirm-downloader
+```
+
+Don't use these flags unless the corresponding manual tests passed. A ZIP/checksum will appear in `release_ready/`. The separate independent solar/coordinate scientific validation remains outstanding; distribute only as a **research/educational preview**.

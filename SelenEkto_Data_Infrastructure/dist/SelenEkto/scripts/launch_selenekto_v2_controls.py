@@ -17,6 +17,7 @@ sys.path.insert(0,str(ROOT/'src'))
 from selenekto_v2.core import (SUFFIXES, METRICS,region_names,region_health,raster_overview,
     read_cell,validate_name,load_candidates,save_candidates,comparable)
 
+from selenekto_v2.library_view import LibraryPage
 from PySide6.QtCore import Qt, QTimer, QThread, Signal, QDateTime
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QFrame,QLabel,QVBoxLayout,QHBoxLayout,
@@ -30,6 +31,16 @@ from selenekto_v2.recommendations import CRITERIA, DEFAULT_WEIGHTS, evaluate
 from selenekto_v2.actual_regions import refresh_saved_candidates
 from selenekto_v2.neon_solar import parse_saved_result
 from selenekto_v2.region_data import load_profiles, METRIC_COLUMNS, metric_value
+# SELENEKTO_FINAL_CONSOLIDATION_V1 — Hide 3 unreliable catalogued regions, preserve all underlying data.
+EXCLUDED_RELEASE_REGIONS = frozenset({'LM8', 'Site20', 'Site23'})
+_original_region_names = region_names
+def region_names(root):
+    return [name for name in _original_region_names(root) if name not in EXCLUDED_RELEASE_REGIONS]
+_original_load_profiles = load_profiles
+def load_profiles(folder):
+    return [p for p in _original_load_profiles(folder)
+            if p.get('site_code') not in EXCLUDED_RELEASE_REGIONS]
+
 from selenekto_v2.illumination_controls import calculate_candidate_timeline, calculate_candidate_horizon, explain_error
 from selenekto_v2.settings_store import (DEFAULTS, THEMES, ACCENTS, load_settings, save_settings, theme_stylesheet)
 
@@ -117,22 +128,18 @@ class Main(QMainWindow):
         self.resize(1460,900)
         self.records=[];self.selected_cell=None;self.active_arr=None;self.active_dims=None
         self.preferences=load_settings(ROOT)
-        self.layer='Elevation';self.region=None;self.map_img=None;self.marker=None;self.solar_worker=None;self.horizon_worker=None
+        self.layer='Slope';self.region=None;self.map_img=None;self.marker=None;self.solar_worker=None;self.horizon_worker=None
         try:self.records=load_candidates(ROOT)
         except Exception as exc:self.records=[];QTimer.singleShot(0,lambda e=str(exc):self.warn('Could not load candidate store',e))
         outer=QWidget();self.setCentralWidget(outer);layout=QHBoxLayout(outer)
         sidebar=QFrame();sidebar.setObjectName('sidebar');sidebar.setFixedWidth(206)
         side=QVBoxLayout(sidebar)
         mast=label('SelenEkto');mast.setStyleSheet(f'font-size:19px;font-weight:bold;color:{FG};')
-        if self.logo_path.is_file():
-            img=QLabel();pix=QPixmap(str(self.logo_path))
-            if not pix.isNull():
-                img.setPixmap(pix.scaled(68,68,Qt.AspectRatioMode.KeepAspectRatio,Qt.TransformationMode.SmoothTransformation))
-                side.addWidget(img)
         side.addWidget(mast);side.addWidget(label('LUNAR LANDING-SITE NAVIGATOR',True))
         self.nav=QListWidget();self.nav.setSpacing(3)
         for item in ['Explorer','Illumination','Compare','Data Health','Settings']:
             self.nav.addItem(item)
+        self.nav.addItem('Data Library')
         side.addWidget(self.nav);side.addStretch()
         side.addWidget(label('Experimental terrain & illumination models. Not a landing safety determination.',True))
         self.pages=QStackedWidget();layout.addWidget(sidebar);layout.addWidget(self.pages,1)
@@ -141,6 +148,8 @@ class Main(QMainWindow):
         self.pages.addWidget(self.make_compare())
         self.pages.addWidget(self.make_health())
         self.pages.addWidget(self.make_settings())
+        self.library_page=LibraryPage(ROOT,on_updated=self._library_updated)
+        self.pages.addWidget(self.library_page)
         self.nav.currentRowChanged.connect(self.pages.setCurrentIndex)
         self.nav.setCurrentRow(0)
         self.statusBar().showMessage('Ready. Select an installed region, then click the terrain.',10000)
@@ -166,6 +175,10 @@ class Main(QMainWindow):
         bar.addWidget(btn('Fit map',self.fit_map))
         self.region_box.currentIndexChanged.connect(self.change_map)
         self.layer_box.currentIndexChanged.connect(self.change_map)
+        # SELENEKTO_CLEAN_INSTALL_MISSING_DATA_V1
+        self.no_data_notice=QLabel('');self.no_data_notice.setWordWrap(True)
+        self.no_data_notice.setStyleSheet('background:#24202A;color:#F7DBA5;border:1px solid #8B6948;border-radius:7px;padding:12px;')
+        self.no_data_notice.hide();l.addWidget(self.no_data_notice)
         self.cell_info=label('Click a valid terrain pixel to inspect its data.',True);l.addWidget(self.cell_info)
         actions=QHBoxLayout();l.addLayout(actions)
         actions.addWidget(btn('Add named candidate',self.add_candidate))
@@ -198,8 +211,27 @@ class Main(QMainWindow):
         self.region_box.blockSignals(True);self.region_box.clear();self.region_box.addItems(options)
         if old in options:self.region_box.setCurrentText(old)
         self.region_box.blockSignals(False)
-        if options:self.change_map()
-        else:self.cell_info.setText('No complete aligned NASA regions found. See Data Health for missing layers.')
+        if options:
+            self.no_data_notice.hide()
+            self.change_map()
+        else:
+            self.active_arr=None;self.active_dims=None;self.region=None;self.layer=None
+            message=('No complete, aligned full-resolution NASA terrain region is installed in this application. '
+                     'This is expected for the lightweight Windows download.\n\n'
+                     'Open Data Library to browse slope previews, then choose Download selected region '
+                     'to install its NASA TIFF layers. Once downloaded, return here and click Refresh datasets.\n\n'
+                     'LM8 has reported missing data; Site20 and Site23 have reported alignment problems '
+                     'and should not be used for scientific comparisons until validated.')
+            self.no_data_notice.setText(message)
+            self.no_data_notice.show()
+            self.cell_info.setText('Full-resolution slope map unavailable. See the explanation above and Data Library.')
+            self.mapplot.reset('Slope map not installed')
+            self.mapplot.ax.text(.5,.55,'Slope map not installed',transform=self.mapplot.ax.transAxes,
+                                 horizontalalignment='center',verticalalignment='center',color='#F7DBA5',fontsize=15)
+            self.mapplot.ax.text(.5,.43,'Open Data Library for offline slope previews',
+                                 transform=self.mapplot.ax.transAxes,horizontalalignment='center',
+                                 verticalalignment='center',color='#C4CAD2',fontsize=10)
+            self.mapplot.finish()
 
     def change_map(self,*_):
         region=self.region_box.currentText();layer=self.layer_box.currentText()
@@ -717,6 +749,10 @@ class Main(QMainWindow):
         path=ROOT/'data/processed/horizon/Site01/Site01_horizon_5km.json'
         try:self.plot_solar_result(parse_saved_result(path),path)
         except Exception as exc:self.warn('Reference horizon unavailable',exc)
+
+    def _library_updated(self):
+        self.refresh_regions()
+        self.refresh_health()
 
     def make_health(self):
         w=QWidget();l=QVBoxLayout(w);l.addWidget(label('SelenEkto / Data Health / installed NASA regions'))

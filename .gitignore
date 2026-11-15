@@ -1,0 +1,25 @@
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Build outputs
+dist/
+build/
+release_ready/
+_archive/
+*.spec
+
+# SelenEkto generated data and backups
+**/data/raw/
+**/data/processed/logs/
+**/data/config/desktop_settings.json
+**/*_backup_*/
+**/*_backup.py
+
+# Local files
+.env
+*.part
+

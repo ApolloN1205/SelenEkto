@@ -4,7 +4,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['PySide6.QtSvg', 'matplotlib.backends.backend_qtagg', 'PIL.Image', 'requests']
+hiddenimports = ['PySide6.QtSvg', 'matplotlib.backends.backend_qtagg', 'PIL.Image', 'urllib.request', 'urllib.error', 'ssl', 'requests']
 hiddenimports += collect_submodules('selenekto_v2')
 hiddenimports += collect_submodules('selenekto_data')
 tmp_ret = collect_all('rasterio')
@@ -44,6 +44,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['C:/Users/Norbert/OneDrive/Documents/GitHub/SelenEkto/SelenEkto_Data_Infrastructure/assets/branding/logo.ico'],
 )
 coll = COLLECT(
     exe,

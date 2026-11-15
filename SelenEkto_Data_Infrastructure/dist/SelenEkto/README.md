@@ -1,36 +1,22 @@
-# SelenEkto — Explainable Candidate Comparison
+# SelenEkto — Final Consolidation
 
-This patch adds a working **Adjust comparison priorities** button to the existing PySide6 **Compare** tab. It patches the current installed launcher *in place*, makes a dated backup, and preserves your existing Settings, Aurora LOLA/Crimson colours, logo, and solar calculation fixes. It does not alter saved candidates, NASA data or prior scientific results.
+This patch is additive, idempotent, and does not delete NASA GeoTIFFs, profiles, or saved candidates.
 
-## What it does
+- Excludes **LM8**, **Site20**, **Site23** from the **Data Library**, **Explorer region selector**, **Data Health table**, and **region-wide comparison**. Their underlying files are untouched; candidates already saved from them are also retained.
+- Restores the **Obsidian** theme to near-black (`#06070A`), while retaining Graphite and all accent colours.
+- Removes excluded region preview/profile copies from a **new portable build only**, without touching the development files.
+- Does **not** claim scientific validation or a successful Windows clean-install test.
 
-Select two or more saved candidates (Ctrl+click) in Compare, then select **Adjust comparison priorities**. The window offers weights 0–10 for:
-- Gentler slope (low is preferred)
-- Lower elevation RMS uncertainty (low is preferred)
-- Lower slope RMS uncertainty (low is preferred)
-- More directly observed LOLA spots at the selected pixel (high is preferred)
+Extract ZIP into the `SelenEkto_Data_Infrastructure` folder. Close the executable first. Run:
 
-By default, it **does not declare a winner**. An optional checkbox highlights the highest *relative preference score* among the selected candidates. The score is normalized only over those candidates; it is not a probability of safety or landing suitability. If any weighted measurement is missing, that candidate is **unscored** with an explicit reason. A criterion with weight zero is ignored. Identical metric values contribute equally to the compared candidates. No values are fabricated. This version deliberately does not include solar exposure in the preference index because validated independent candidate-solar results are not universally available yet.
+```powershell
+.\.venv\Scripts\python.exe .\scripts\apply_final_consolidation.py
+.\.venv\Scripts\python.exe -m pytest tests -q
+.\.venv\Scripts\python.exe .\scripts\generate_offline_previews.py
+```
 
-## Install in the existing infrastructure directory (PowerShell)
+In SelenEkto **Settings**, choose **Obsidian**, then save. Existing preference files are not overwritten.
 
-1. Download the ZIP and select it from a Windows file picker (see chat response).
-2. Verify the new files exist:
-   `Test-Path .\scripts\patch_selenekto_recommendations.py`
-   `Test-Path .\src\selenekto_v2\recommendations.py`
-3. Apply once (makes a timestamped backup of your active launcher):
-   `.\.venv\Scripts\python.exe .\scripts\patch_selenekto_recommendations.py`
-4. Run the six focused tests:
-   `.\.venv\Scripts\python.exe -m pytest tests\test_recommendations.py -q`
-5. Run the full tests:
-   `.\.venv\Scripts\python.exe -m pytest tests -q`
-6. Open the main app:
-   `.\.venv\Scripts\python.exe .\scripts\launch_selenekto_v2_controls.py`
+To rebuild, first rename `dist\SelenEkto` to a dated backup. Execute `scripts\build_windows_release.py`, then `scripts\check_portable_release.py` before publishing. **Do not run `local_release_link.py` on the distributable copy.** A successful check does not substitute for a clean-computer smoke test.
 
-## Data prerequisites
-
-To compare actual terrain measurements, your region's five source NASA rasters must be present and complete. After the existing download finishes, use the previously installed bulk downloader's verification command (check `--help` for available flags), regenerate real region profiles and refresh saved pixel data in Compare. Run this upgrade whether or not all regions have finished downloading: incomplete candidates will simply have clearly marked missing scores.
-
-## Scope and quality
-
-Six unit tests run successfully in the build environment. The patcher was tested on the known Settings-launcher version, including idempotent second-run behaviour. The complete, user-modified Windows app still needs local validation. This is not a full scientific validation or final executable.
+The public release still requires checking download functionality, independent startup, scientific uncertainty and the repository inventory. Keep a backup and do not delete historical project files until audited.

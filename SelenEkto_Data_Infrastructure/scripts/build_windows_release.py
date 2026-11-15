@@ -32,7 +32,7 @@ def build(root: Path, dry_run: bool = False) -> list[str]:
             '--hidden-import', 'PySide6.QtSvg',
             '--hidden-import', 'matplotlib.backends.backend_qtagg',
             '--hidden-import', 'PIL.Image',
-            '--hidden-import', 'requests']
+            '--hidden-import', 'urllib.request', '--hidden-import', 'urllib.error', '--hidden-import', 'ssl', '--hidden-import', 'requests']
     if icon.exists():
         args += ['--icon', str(icon)]
     args += [str(entry)]
@@ -41,7 +41,7 @@ def build(root: Path, dry_run: bool = False) -> list[str]:
         return args
     subprocess.run(args, cwd=root, check=True)
     # Python files remain beside executable: the existing app assumes project-root paths.
-    shutil.copytree(root/'scripts', dest/'scripts', ignore=shutil.ignore_patterns('__pycache__','*.pyc'), dirs_exist_ok=True)
+    shutil.copytree(root/'scripts', dest/'scripts', ignore=shutil.ignore_patterns('__pycache__','*.pyc','*_backup*.py','*_pre_*.py','*_before_*.py','*_pre_*.py','*.bak','*_old.py'), dirs_exist_ok=True)
     shutil.copytree(root/'src', dest/'src', ignore=shutil.ignore_patterns('__pycache__','*.pyc'), dirs_exist_ok=True)
     assets = root/'assets'
     if assets.is_dir():
@@ -49,6 +49,9 @@ def build(root: Path, dry_run: bool = False) -> list[str]:
     profiles = root/'data'/'catalog'/'region_profiles'
     if profiles.is_dir():
         shutil.copytree(profiles, dest/'data'/'catalog'/'region_profiles',dirs_exist_ok=True)
+    preview_folder = root/'data'/'catalog'/'previews'
+    if preview_folder.is_dir():
+        shutil.copytree(preview_folder, dest/'data'/'catalog'/'previews', dirs_exist_ok=True)
     (dest/'data'/'raw'/'lola').mkdir(parents=True,exist_ok=True)
     (dest/'data'/'processed'/'logs').mkdir(parents=True,exist_ok=True)
     (dest/'data'/'config').mkdir(parents=True,exist_ok=True)
@@ -65,8 +68,27 @@ def build(root: Path, dry_run: bool = False) -> list[str]:
         'If the app fails, inspect data/processed/logs/release_startup_error.log.\n',encoding='utf-8')
     (dest/'release_manifest.json').write_text(json.dumps({
         'app':'SelenEkto','format':'portable-windows-onedir','raw_rasters_included':False,
-        'source_folder':str(root),'scientific_validation':'not independently certified'
+        'scientific_validation':'not independently certified'
     }, indent=2),encoding='utf-8')
+    # SELENEKTO_RELEASE_DIAGNOSTIC_V1
+    # The release entrypoint reports startup errors through a native Windows dialog.
+    # Do not copy the developer's massive NASA TIFF folder into a public build.
+    for accidental in dest.rglob('*.tif'):
+        if accidental.is_file():
+            raise RuntimeError(f'Unexpected TIFF included in release: {accidental}')
+    for accidental in dest.rglob('*.tiff'):
+        if accidental.is_file():
+            raise RuntimeError(f'Unexpected TIFF included in release: {accidental}')
+    # SELENEKTO_FINAL_CONSOLIDATION_V1 — omit excluded catalogues from PUBLIC distribution only.
+    # This acts only on the fresh dist output; never on source NASA data or saved candidates.
+    for region in ('LM8', 'Site20', 'Site23'):
+        for subfolder in ('data/catalog/previews', 'data/catalog/region_profiles'):
+            folder = dest/subfolder
+            if folder.is_dir():
+                for path in folder.glob(region + '_*'):
+                    if path.is_file():
+                        path.unlink()
+    # Do not package obsolete pre-exclusion previews/profiles.
     print('Portable directory:',dest)
     print('Smoke test required: double-click executable and verify Explorer, Compare, Illumination, Settings.')
     return args
