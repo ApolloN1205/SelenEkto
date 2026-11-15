@@ -63,3 +63,42 @@ def test_candidate_analysis_uses_own_region(tmp_path,monkeypatch):
     assert result['summary']['sample_count']==1
     assert file.is_file()
     assert 'Site04' in str(file)
+
+
+def test_partial_boundary_horizon_is_not_presented_as_complete(tmp_path, monkeypatch):
+    """A 360-azimuth result may still have incomplete distance coverage."""
+    import numpy as np
+    import rasterio
+    import sys
+    import types
+    from rasterio.transform import from_origin
+    from selenekto_v2 import illumination_controls as ctl
+    import selenekto_data.horizon as horizon_module
+    from selenekto_data import candidate_solar
+
+    region = 'Site04'
+    raster = tmp_path / 'dem.tif'
+    with rasterio.open(raster, 'w', driver='GTiff', height=20, width=20,
+                       count=1, dtype='float32',
+                       transform=from_origin(-50, 50, 5, 5),
+                       crs='+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +R=1737400 +units=m +no_defs') as ds:
+        ds.write(np.full((20, 20), 100.0, dtype='float32'), 1)
+    paths = {'Elevation': raster, 'LOLA observations': raster,
+             'Elevation uncertainty': raster}
+    core = types.ModuleType('selenekto_v2.core')
+    core.region_health = lambda root, key: {'status': 'ready', 'details': 'test'}
+    core.region_files = lambda root, key: paths
+    monkeypatch.setitem(sys.modules, 'selenekto_v2.core', core)
+
+    candidate = {'region': region, 'name': 'Edge', 'row': 10, 'col': 10}
+    # A 120 m scan exceeds the 100 m-wide raster in every direction.
+    with pytest.raises(ValueError, match='DEM ends before the requested scan radius'):
+        ctl.calculate_candidate_horizon(tmp_path, candidate, scan_m=120)
+
+    def forbidden_network(*args, **kwargs):
+        raise AssertionError('Do not query JPL when the horizon is incomplete')
+    monkeypatch.setattr(candidate_solar, 'fetch_candidate_sun', forbidden_network)
+    with pytest.raises(ValueError, match='DEM ends before the requested scan radius'):
+        ctl.calculate_candidate_timeline(
+            tmp_path, candidate, datetime(2026, 11, 15, tzinfo=timezone.utc),
+            24, 60, scan_m=120)
