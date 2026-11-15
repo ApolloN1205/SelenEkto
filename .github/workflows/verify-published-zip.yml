@@ -1,0 +1,83 @@
+name: Verify published Windows ZIP
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/verify-published-zip.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-published-release:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Download published V1.0 asset and inspect contents
+        shell: pwsh
+        run: |
+          @'
+          import json
+          import struct
+          import urllib.request
+          import zipfile
+          from pathlib import Path
+
+          headers = {'Accept': 'application/vnd.github+json', 'User-Agent': 'SelenEkto-release-verifier'}
+          api = 'https://api.github.com/repos/ApolloN1205/SelenEkto/releases/tags/V1.0'
+          with urllib.request.urlopen(urllib.request.Request(api, headers=headers), timeout=30) as response:
+              release = json.load(response)
+          assets = [a for a in release.get('assets', []) if a['name'] == 'SelenEkto.zip']
+          if len(assets) != 1:
+              raise SystemExit('Expected exactly one SelenEkto.zip release asset')
+          req = urllib.request.Request(assets[0]['browser_download_url'], headers={'User-Agent': 'SelenEkto-release-verifier'})
+          with urllib.request.urlopen(req, timeout=120) as response, open('SelenEkto.zip', 'wb') as out:
+              while chunk := response.read(2 * 1024 * 1024):
+                  out.write(chunk)
+          archive_path = Path('SelenEkto.zip')
+          errors = []
+          with zipfile.ZipFile(archive_path) as z:
+              members = z.namelist()
+              def match(path):
+                  return [x for x in members if x.replace('\\', '/').endswith(path)]
+              for required in ('SelenEkto.exe', '_internal/base_library.zip',
+                               'scripts/launch_selenekto_v2_controls.py',
+                               'src/selenekto_v2/library_view.py'):
+                  if not match(required):
+                      errors.append('Missing required file: ' + required)
+              exes = [x for x in match('/SelenEkto.exe') if x.endswith('/SelenEkto.exe')]
+              if not exes:
+                  exes = [x for x in members if x == 'SelenEkto.exe']
+              if len(exes) != 1 or z.open(exes[0]).read(2) != b'MZ':
+                  errors.append('No valid Windows executable')
+              bases = match('_internal/base_library.zip')
+              if len(bases) != 1 or z.getinfo(bases[0]).file_size < 65536:
+                  errors.append('Missing, small or duplicated embedded Python library')
+              else:
+                  from io import BytesIO
+                  with zipfile.ZipFile(BytesIO(z.read(bases[0]))) as lib:
+                      if 'encodings/__init__.pyc' not in lib.namelist() and 'encodings/__init__.py' not in lib.namelist():
+                          errors.append('Embedded Python cannot import encodings')
+                      if lib.testzip():
+                          errors.append('Corrupt embedded Python library')
+              previews = [x for x in members if x.endswith('_slope.png') and '/previews/' in x.replace('\\', '/')]
+              if len(previews) != 24:
+                  errors.append(f'Expected 24 offline slope previews, found {len(previews)}')
+              for x in members:
+                  normalized = x.replace('\\', '/')
+                  if normalized.lower().endswith(('.tif', '.tiff')):
+                      errors.append('Full-resolution raster bundled: ' + normalized)
+                  if normalized.endswith(('desktop_settings.json', 'named_candidates.json')):
+                      errors.append('Private runtime configuration bundled: ' + normalized)
+              print(json.dumps({'zip_bytes': archive_path.stat().st_size,
+                                'member_count': len(members), 'slope_previews': len(previews),
+                                'errors': errors}, indent=2))
+          if errors:
+              raise SystemExit('Published release validation FAILED')
+          '@ | Set-Content verify_release.py
+          python verify_release.py
