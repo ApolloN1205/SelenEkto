@@ -146,6 +146,54 @@ def walk_no_follow(root: Path):
             yield path, 'link' if is_link(path) else 'file'
 
 
+def embedded_python_errors(stage: Path) -> list[str]:
+    """Verify PyInstaller's embedded standard library and Python DLL before release.
+
+    A directory named _internal is insufficient: an unresolved Git LFS pointer
+    can have the correct filename yet be an unreadable ~100-byte text file.
+    """
+    internal = stage / '_internal'
+    if not internal.is_dir():
+        return ['PyInstaller _internal directory not present beside executable']
+
+    errors = []
+    library = internal / 'base_library.zip'
+    if not library.is_file():
+        errors.append('Missing embedded Python _internal/base_library.zip')
+    else:
+        try:
+            if library.stat().st_size < 65536:
+                errors.append('Embedded Python base_library.zip is too small (possibly an LFS pointer)')
+            else:
+                with zipfile.ZipFile(library, 'r') as archive:
+                    names = set(archive.namelist())
+                    if not ({'encodings/__init__.pyc', 'encodings/__init__.py'} & names):
+                        errors.append('Embedded Python base_library.zip is missing encodings/__init__')
+                    bad = archive.testzip()
+                    if bad is not None:
+                        errors.append(f'Embedded Python base_library.zip has a corrupt member: {bad}')
+        except (OSError, zipfile.BadZipFile, zipfile.LargeZipFile, RuntimeError, ValueError) as exc:
+            errors.append(f'Embedded Python base_library.zip is unreadable: {exc}')
+
+    python_dlls = sorted(internal.glob('python3*.dll'))
+    if not python_dlls:
+        errors.append('Missing PyInstaller embedded Python DLL (python3*.dll)')
+    else:
+        valid = False
+        for dll in python_dlls:
+            try:
+                if dll.stat().st_size >= 65536:
+                    with dll.open('rb') as stream:
+                        if stream.read(2) == b'MZ':
+                            valid = True
+                            break
+            except OSError:
+                pass
+        if not valid:
+            errors.append('Embedded Python DLL is truncated or not a Windows PE file')
+    return errors
+
+
 def audit(stage: Path) -> dict:
     stage=Path(stage)
     errors=[]; warnings=[]; size=0; files=0; previews=0
@@ -159,8 +207,7 @@ def audit(stage: Path) -> dict:
     if exe.is_file():
         with exe.open('rb') as stream:
             if stream.read(2)!=b'MZ': errors.append('SelenEkto.exe is not a Windows PE executable')
-    if not (stage/'_internal').is_dir():
-        errors.append('PyInstaller _internal directory not present beside executable')
+    errors.extend(embedded_python_errors(stage))
     for path,kind in walk_no_follow(stage):
         rel=path.relative_to(stage)
         parts={x.lower() for x in rel.parts}
@@ -326,6 +373,9 @@ def prepare(root: Path, *, skip_build: bool=False):
 
 
 def zip_release(stage:Path, zip_path:Path) -> tuple[str,int]:
+    runtime_errors = embedded_python_errors(stage)
+    if runtime_errors:
+        raise RuntimeError('Refusing to package invalid embedded Python runtime: ' + '; '.join(runtime_errors))
     if zip_path.exists():raise FileExistsError(f'Release ZIP exists: {zip_path}')
     with zipfile.ZipFile(zip_path,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6,allowZip64=True) as bundle:
         for path,kind in walk_no_follow(stage):
