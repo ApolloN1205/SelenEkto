@@ -1,31 +1,57 @@
-# SelenEkto — release profile privacy repair
+# SelenEkto — Developer guide
 
-The static audit identified absolute Windows user paths in 24 terrain-profile JSON files and in `local_raster_inventory.json`. The staged directory is otherwise 304.9 MiB and has 24 slope previews.
+This directory contains the Python source, PySide6 desktop app, scientific utilities, datasets metadata, tests and Windows release tooling.
 
-This patch fixes the **already-created staging directory** rather than rebuilding the executable. It converts private absolute paths inside terrain profiles to portable `data/...` references when they have an unambiguous recognized anchor. The local raster inventory is excluded from the *staged copy only*. It does **not** alter the source profiles, your original NASA rasters or the calculations. Originals from the modified staged files are backed up under `release_ready/privacy_backups_.../`, **outside** the distributable folder.
+## Source layout
 
-If a private path can't be safely converted, it refuses to proceed; it will not silently alter a scientific field or manufacture a path. The existing full release audit runs again and must pass before `latest_stage.txt` is created. A small hook is installed so future `prepare` builds apply the same privacy correction before their audit.
+| Location | Purpose |
+| --- | --- |
+| `src/selenekto_data/` | Lunar raster loading, geodesy, horizon, JPL solar and data-processing code |
+| `src/selenekto_v2/` | Desktop UI, offline library, preferences and candidate comparisons |
+| `scripts/launch_selenekto_v2_controls.py` | Current development launcher |
+| `scripts/download_pgda_real.py` | Selective NASA PGDA raster acquisition |
+| `scripts/generate_offline_previews.py` | Generate slope PNG previews from installed rasters |
+| `tests/` | Automated regression tests |
+| `data/catalog/` | Lightweight region catalogue, profiles and preview images |
+| `release/selenekto_entry.py` | PyInstaller Windows bootstrap |
 
-## Install and repair
+Historical launchers and backup scripts remain in the repository for now; the current launcher is `launch_selenekto_v2_controls.py`. Avoid treating old scripts as the production entrypoint.
 
-Extract `SelenEkto_Release_Privacy_Fix.zip` into `SelenEkto_Data_Infrastructure` (ZIP root contains `scripts/` and `tests/`).
+## Development on Windows
+
+Use a compatible Python version and install the project's scientific/UI dependencies in a virtual environment. The `pyproject.toml` optional `geo` and `test` sets do **not** by themselves install the complete desktop app stack.
+
+A typical development environment needs `PySide6`, `matplotlib`, `numpy`, `rasterio`, `pyproj`, `Pillow` and `pytest`; build tooling additionally needs `pyinstaller`. Review imports and dependency compatibility before choosing a Python release.
+
+From this directory, with a configured environment:
 
 ```powershell
-.\.venv\Scripts\python.exe .\scripts\fix_release_profile_privacy.py
+.\.venv\Scripts\python.exe -m pytest tests -q
+.\.venv\Scripts\python.exe .\scripts\launch_selenekto_v2_controls.py
 ```
 
-Then:
+## Windows release
 
 ```powershell
+.\.venv\Scripts\python.exe .\scripts\final_release_gate.py prepare
 .\.venv\Scripts\python.exe .\scripts\final_release_gate.py audit
-$stage = (Get-Content .\release_ready\latest_stage.txt -Raw).Trim()
-Start-Process -FilePath (Join-Path $stage 'SelenEkto.exe')
 ```
 
-Check the staged application, without a local data junction: launch without Python, 24 offline slope previews, warnings when raw rasters are missing, clear statuses, excluded regions, and a successful single-region NASA download using the app itself. Only after these real checks:
+Only use the publish command and its manual-check flags **after** you have verified a clean extracted ZIP on a separate Windows environment, its slope previews, the missing-data explanations, and the selective downloader. See [release checklist](../docs/RELEASE_CHECKLIST.md).
 
-```powershell
-.\.venv\Scripts\python.exe .\scripts\final_release_gate.py publish --confirm-smoke --confirm-downloader
-```
+Do **not** distribute a locally linked `data/raw/lola` junction. Keep the original high-resolution NASA TIFFs out of the portable download.
 
-Don't use these flags unless the corresponding manual tests passed. A ZIP/checksum will appear in `release_ready/`. The separate independent solar/coordinate scientific validation remains outstanding; distribute only as a **research/educational preview**.
+## Scientific limitations
+
+- A preview is not sufficient to compute a new candidate's full terrain horizon.
+- The candidate horizon is limited to the selected DEM and configured scan radius.
+- Coordinate-frame assumptions and JPL observer geometry require independent cross-checks.
+- Site20, Site23 and LM8 are excluded from usable datasets pending repair/validation.
+- Do not interpret preference scores as landing safety.
+
+## Documentation
+
+- [Project overview](../README.md)
+- [Dataset provenance](DATA_SOURCE_AUDIT.md)
+- [Release checklist and known issues](../docs/RELEASE_CHECKLIST.md)
+- [Original design dossier](../SELENEKTO_MASTER_PROJECT_DOSSIER.md)
