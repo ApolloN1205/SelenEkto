@@ -38,7 +38,7 @@ def test_earth_direction_is_rotated_into_grid_frame():
     positions = [{
         "time_tag": "2026-Nov-15 12:00",
         "azimuth_deg": 350.0,
-        "elevation_deg": 1.2,
+        "elevation_deg": 2.0,
     }]
     horizon = flat_horizon()
     horizon[10]["horizon_angle_deg"] = 2.0
